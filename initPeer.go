@@ -2,14 +2,18 @@ package main
 
 import (
 	"context"
+	"flag"
 
 	orbitdb "berty.tech/go-orbit-db"
 	"berty.tech/go-orbit-db/iface"
 	"berty.tech/go-orbit-db/stores/documentstore"
 	"github.com/ipfs/kubo/core/coreapi"
+	"go.uber.org/zap"
 )
 
 var orbit iface.OrbitDB
+
+var flagDevLogs = flag.Bool("devlogs", false, "enable development level logging")
 
 // starts the ipfs node and creates the orbitdb structures on top of it
 func initPeer(peersDB *PeersDB) error {
@@ -29,11 +33,20 @@ func initPeer(peersDB *PeersDB) error {
 		return err
 	}
 
+	// switch between noop and dev logger via flag
+	var devLog *zap.Logger
+	if *flagDevLogs {
+		devLog, err = zap.NewDevelopment()
+		if err != nil {
+			return err
+		}
+	}
+
 	// create db
 	orbit, err = orbitdb.NewOrbitDB(
 		ctx,
 		coreAPI,
-		&orbitdb.NewOrbitDBOptions{})
+		&orbitdb.NewOrbitDBOptions{Logger: devLog})
 	if err != nil {
 		return err
 	}
