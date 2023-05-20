@@ -80,7 +80,7 @@ func ConnectToPeers(ctx context.Context, peersDB *PeersDB, peers []string, logCh
 			defer wg.Done()
 			err := api.Swarm().Connect(ctx, *peerInfo)
 			if err != nil {
-				// TODO : should be send via Response channel I think
+				// TODO : should be sent via Response channel
 				logChan <- Log{RecoverableErr, err}
 			}
 		}(peerInfo)
