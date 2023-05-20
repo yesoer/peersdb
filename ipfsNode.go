@@ -17,6 +17,7 @@ import (
 )
 
 var flagExp = flag.Bool("experimental", true, "enable experimental features")
+var flagPort = flag.String("port", "4001", "configure application port")
 
 // Setup ipfs plugins
 func setupPlugins(externalPluginsPath string) error {
@@ -96,13 +97,9 @@ func createTempRepo() (string, error) {
 
 	// Configure swarm addresses/where to listen
 	// TODO : make port configurable
-	var port string
-	fmt.Print("Gimme port :")
-	fmt.Scanln(&port)
-	fmt.Print("\n")
 	cfg.Addresses.Swarm = []string{
-		"/ip4/127.0.0.1/tcp/" + port,
-		"/ip6/::1/tcp/" + port,
+		"/ip4/127.0.0.1/tcp/" + *flagPort,
+		"/ip6/::1/tcp/" + *flagPort,
 	}
 
 	// Create the repo with the config
