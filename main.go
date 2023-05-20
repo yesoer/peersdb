@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -45,6 +46,8 @@ type Log struct {
 // via termCtx/termCancel, any cancellation can be forwarded to go routines for
 // graceful shutdown
 func main() {
+
+	flag.Parse()
 
 	// prep termination context
 	termCtx, termCancel := context.WithCancel(context.Background())
