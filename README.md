@@ -12,6 +12,9 @@ go run main.go ipfsNode.go ipfsNodeAct.go service.go shell.go initPeer.go
 | Flag           | Description | Default |
 |----------------|-------------|---------|
 | -experimental  | enables kubo experimental features | true |
+| -devlogs | enables development level logging | false |
+| -port | sets the application port | 4001 |
+| -shell | enables the shell interface | false |
 
 
 # Contribution :
