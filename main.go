@@ -28,6 +28,9 @@ type PeersDB struct {
 	LogDBMtx sync.RWMutex
 }
 
+var flagShell = flag.Bool("shell", false, "enable shell interface")
+
+// TODO : check out orbitdb logger (apparently safe for concurrent use and lightweight
 type LogType uint8
 
 const (
@@ -108,7 +111,10 @@ func main() {
 	go service(&peersDB, reqChan, resChan, logChan)
 
 	// start the shell interface
-	go shell(&peersDB, reqChan, resChan, logChan)
+	if *flagShell {
+		go shell(&peersDB, reqChan, resChan, logChan)
+	}
+
 
 	// await termination context
 	<-termCtx.Done()
