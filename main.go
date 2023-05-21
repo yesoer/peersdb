@@ -20,12 +20,13 @@ type PeersDB struct {
 	ID string // node identifier TODO : can probably get it from LogDB somehow
 
 	// data storage
-	Node  *core.IpfsNode         // TODO : only because of node.PeerHost.EventBus
-	LogDB *orbitdb.DocumentStore // the log which holds all transactions
-	Orbit *iface.OrbitDB
+	Node       *core.IpfsNode         // TODO : only because of node.PeerHost.EventBus
+	EventLogDB *orbitdb.EventLogStore // the log which holds all transactions
+	Orbit      *iface.OrbitDB
 
 	// mutex to control access to the eventlog db across go routines
-	LogDBMtx sync.RWMutex
+	// TODO : use
+	EventLogDBMtx sync.RWMutex
 }
 
 var flagShell = flag.Bool("shell", false, "enable shell interface")
@@ -114,7 +115,6 @@ func main() {
 	if *flagShell {
 		go shell(&peersDB, reqChan, resChan, logChan)
 	}
-
 
 	// await termination context
 	<-termCtx.Done()

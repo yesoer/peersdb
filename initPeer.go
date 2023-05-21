@@ -6,7 +6,6 @@ import (
 
 	orbitdb "berty.tech/go-orbit-db"
 	"berty.tech/go-orbit-db/iface"
-	"berty.tech/go-orbit-db/stores/documentstore"
 	"github.com/ipfs/kubo/core/coreapi"
 	"go.uber.org/zap"
 )
@@ -52,15 +51,15 @@ func initPeer(peersDB *PeersDB) error {
 	}
 
 	// create document store, with "hash" as the index
-	var db orbitdb.DocumentStore
-	docstoreOpt := documentstore.DefaultStoreOptsForMap("cid")
-	dbopts := orbitdb.CreateDBOptions{StoreSpecificOpts: docstoreOpt}
-	db, err = orbit.Docs(ctx, "cid-store", &dbopts)
+	// TODO : eventstore specific options ?
+	var db orbitdb.EventLogStore
+	dbopts := orbitdb.CreateDBOptions{}
+	db, err = orbit.Log(ctx, "transactions", &dbopts)
 	if err != nil {
 		return err
 	}
 
-	peersDB.LogDB = &db
+	peersDB.EventLogDB = &db
 	peersDB.ID = node.Identity.String()
 	peersDB.Node = node
 	peersDB.Orbit = &orbit

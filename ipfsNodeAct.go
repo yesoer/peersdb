@@ -52,7 +52,7 @@ var loadPluginsOnce sync.Once
 func ConnectToPeers(ctx context.Context, peersDB *PeersDB, peers []string, logChan chan Log) error {
 	var wg sync.WaitGroup
 
-	api := (*peersDB.LogDB).IPFS()
+	api := (*peersDB.EventLogDB).IPFS()
 
 	// extract and map ids to addresses
 	peerInfos := make(map[peer.ID]*peer.AddrInfo, len(peers))
