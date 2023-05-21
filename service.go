@@ -7,7 +7,6 @@ import (
 
 	orbitdb "berty.tech/go-orbit-db"
 	"berty.tech/go-orbit-db/iface"
-	"berty.tech/go-orbit-db/stores/operation"
 	"github.com/libp2p/go-libp2p/core/event"
 	"github.com/libp2p/go-libp2p/core/network"
 	"golang.org/x/net/context"
@@ -160,11 +159,13 @@ func distQuery(ctx context.Context, peersDB *PeersDB, logChan chan Log) {
 			defer ds.Close()
 			defer ds.Drop()
 
-			res := make(chan operation.Operation, 100)
-			err = ds.Stream(ctx, res, &orbitdb.StreamOptions{Amount: &infinity})
+			res, err := ds.List(ctx, &orbitdb.StreamOptions{Amount: &infinity})
+			if err != nil {
+				logChan <- Log{RecoverableErr, err}
+				return
+			}
 
-			res1 := <-res
-			fmt.Print(string(res1.GetValue()), err)
+			fmt.Print(res)
 		}(dbid)
 	}
 
