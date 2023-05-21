@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
+	orbitdb "berty.tech/go-orbit-db"
 	"berty.tech/go-orbit-db/iface"
-	files "github.com/ipfs/go-ipfs-files"
-	"github.com/ipfs/interface-go-ipfs-core/path"
+	"berty.tech/go-orbit-db/stores/operation"
 	"github.com/libp2p/go-libp2p/core/event"
 	"github.com/libp2p/go-libp2p/core/network"
 	"golang.org/x/net/context"
@@ -17,7 +17,7 @@ import (
 var PeerDbIds []string
 
 func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, logChan chan Log) {
-	db := *peersDB.LogDB
+	db := *peersDB.EventLogDB
 	coreAPI := db.IPFS()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -89,41 +89,6 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 		req := <-reqChan
 		switch req.Method.Cmd {
 		case GET.Cmd:
-			// retrieve the document by the file id
-			var opt iface.DocumentStoreGetOptions
-			cid := req.Args[0]
-			res, err := db.Get(ctx, cid, &opt)
-			if err != nil {
-				logChan <- Log{RecoverableErr, err}
-				break
-			}
-
-			if len(res) == 0 {
-				logChan <- Log{Info, "db entry not found"}
-				break
-			}
-
-			// retrieve the file by path
-			// TODO : handle multiple
-			resElem := res[0].(map[string]interface{})
-			resFilePath, ok := resElem["path"].(string)
-			if !ok {
-				logChan <- Log{Info, "no valid file path"}
-				break
-			}
-
-			pth := path.New(resFilePath)
-			file, err := coreAPI.Unixfs().Get(ctx, pth)
-			if err != nil {
-				logChan <- Log{RecoverableErr, err}
-				break
-			}
-
-			// DEVNOTE : will fail if the file already exists
-			// TODO : configurable, second parameter
-			if err := files.WriteTo(file, "./retrieved/res.csv"); err != nil {
-				logChan <- Log{RecoverableErr, err}
-			}
 
 		case POST.Cmd:
 			// add a file to the ipfs store
@@ -136,12 +101,8 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 			}
 
 			// add the reference to the file (stored in ipfs) to orbitdb
-			var mydoc interface{} = map[string]interface{}{
-				"cid":  filePath.Cid().String(),
-				"path": filePath.String(),
-			}
-
-			_, err = db.Put(ctx, mydoc)
+			data := []byte(filePath.String())
+			_, err = db.Add(ctx, data)
 			if err != nil {
 				logChan <- Log{RecoverableErr, err}
 			}
@@ -182,7 +143,8 @@ func distQuery(ctx context.Context, peersDB *PeersDB, logChan chan Log) {
 				logChan <- Log{RecoverableErr, err}
 				return
 			}
-			peerDb.Load(ctx, -1) // TODO : fetch all entries
+			infinity := -1
+			peerDb.Load(ctx, infinity) // TODO : fetch all entries
 
 			// TODO : await that db is ready/loaded/replicated ?
 			fmt.Print("before ", peerDb.ReplicationStatus())
@@ -194,15 +156,15 @@ func distQuery(ctx context.Context, peersDB *PeersDB, logChan chan Log) {
 
 			// try converting to doc store
 			// TODO : filter should be passed as arg to query
-			ds, _ := peerDb.(iface.DocumentStore)
-			fltr2 := func(doc interface{}) (bool, error) {
-				return true, nil
-			}
+			ds, _ := peerDb.(iface.EventLogStore)
 			defer ds.Close()
 			defer ds.Drop()
 
-			res, err := ds.Query(ctx, fltr2)
-			fmt.Print(res, err)
+			res := make(chan operation.Operation, 100)
+			err = ds.Stream(ctx, res, &orbitdb.StreamOptions{Amount: &infinity})
+
+			res1 := <-res
+			fmt.Print(string(res1.GetValue()), err)
 		}(dbid)
 	}
 
