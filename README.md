@@ -28,6 +28,7 @@ and type is one of the following (extend if needed)
 |------|------------------|
 | feat | any new features |
 | maintenance | any work on docs, git workflows, tests etc. |
+| refactor | when refactoring existing parts of the application |
 | fix  | bug fixes        |
 | test | testing environments/throwaway branches |
 
