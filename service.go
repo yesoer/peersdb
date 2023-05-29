@@ -1,8 +1,8 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	orbitdb "berty.tech/go-orbit-db"
@@ -12,12 +12,8 @@ import (
 	"golang.org/x/net/context"
 )
 
-// TODO : should probably be a part of the PeersDB struct
-var PeerDbIds []string
-
 func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, logChan chan Log) {
-	db := *peersDB.EventLogDB
-	coreAPI := db.IPFS()
+	coreAPI := (*peersDB.Orbit).IPFS()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel() // TODO : correct ?
@@ -36,14 +32,17 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 
 	// wait and handle connectedness changed event
 	go func() {
+		db := peersDB.EventLogDB
+
 		for e := range subipfs.Out() {
 			e, ok := e.(event.EvtPeerConnectednessChanged)
 
-			// on established connection send this nodes id to peer by
-			// publishing it to the topic identified by their id
-			if ok && e.Connectedness == network.Connected {
+			// on established connection
+			if ok && e.Connectedness == network.Connected && db != nil {
+				// send this stores id to peer by publishing it to the topic
+				// identified by their id
 				peerId := e.Peer.String()
-				cidDbId := db.Address().String()
+				cidDbId := (*db).Address().String()
 				err := coreAPI.PubSub().Publish(ctx, peerId, []byte(cidDbId))
 				if err != nil {
 					logChan <- Log{RecoverableErr, err}
@@ -77,7 +76,25 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 				return
 			}
 
-			PeerDbIds = append(PeerDbIds, string(msg.Data()))
+			// in case we started without any db, replicate this one
+			if peersDB.EventLogDB == nil {
+				addr := string(msg.Data())
+				create := false
+				storeType := "eventlog"
+				dbopts := orbitdb.CreateDBOptions{
+					Create:    &create,
+					StoreType: &storeType,
+				}
+
+				store, err := (*peersDB.Orbit).Open(ctx, addr, &dbopts)
+				if err != nil {
+					logChan <- Log{RecoverableErr, err}
+				}
+
+				db := store.(iface.EventLogStore)
+				db.Load(ctx, -1)
+				peersDB.EventLogDB = &db
+			}
 		}
 	}()
 
@@ -90,6 +107,13 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 		case GET.Cmd:
 
 		case POST.Cmd:
+			db := peersDB.EventLogDB
+			if db == nil {
+				err = errors.New("you need a datastore first, try connecting to a peer")
+				logChan <- Log{RecoverableErr, err}
+				break
+			}
+
 			// add a file to the ipfs store
 			// DEVNOTE : test file : "./sample-data/r4.xlarge_i-0f4e4b248a6aa957a_wordcount_spark_large_3/sar.csv"
 			path := req.Args[0]
@@ -101,7 +125,7 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 
 			// add the reference to the file (stored in ipfs) to orbitdb
 			data := []byte(filePath.String())
-			_, err = db.Add(ctx, data)
+			_, err = (*db).Add(ctx, data)
 			if err != nil {
 				logChan <- Log{RecoverableErr, err}
 			}
@@ -115,59 +139,22 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 
 		// TODO : only works once ?!
 		case QUERY.Cmd:
-			distQuery(ctx, peersDB, logChan)
+			db := peersDB.EventLogDB
+			if db == nil {
+				err = errors.New("you need a datastore first, try connecting to a peer")
+				logChan <- Log{RecoverableErr, err}
+				break
+			}
+
+			infinity := -1
+			(*db).Load(ctx, infinity)
+			// TODO : await replication/ready event
+			time.Sleep(time.Second * 5)
+			res, err := (*db).List(ctx, &orbitdb.StreamOptions{Amount: &infinity})
+			if err != nil {
+				logChan <- Log{RecoverableErr, err}
+			}
+			fmt.Print(res)
 		}
 	}
-}
-
-// execute a given query on known DBs of known peers
-func distQuery(ctx context.Context, peersDB *PeersDB, logChan chan Log) {
-	allowCreate := false
-	storeType := "docstore"
-	createOpt := iface.CreateDBOptions{Create: &allowCreate, StoreType: &storeType}
-
-	var wg sync.WaitGroup
-	wg.Add(len(PeerDbIds))
-
-	// execute distributed query to get all cids
-	fmt.Print("known dbs : ", PeerDbIds)
-	for _, dbid := range PeerDbIds {
-		go func(dbid string) {
-
-			defer wg.Done()
-
-			// get peers db
-			peerDb, err := (*peersDB.Orbit).Open(ctx, dbid, &createOpt)
-			if err != nil {
-				logChan <- Log{RecoverableErr, err}
-				return
-			}
-			infinity := -1
-			peerDb.Load(ctx, infinity) // TODO : fetch all entries
-
-			// TODO : await that db is ready/loaded/replicated ?
-			fmt.Print("before ", peerDb.ReplicationStatus())
-			time.Sleep(time.Second * 3)
-			fmt.Print("after ", peerDb.ReplicationStatus())
-
-			defer peerDb.Drop()
-			defer peerDb.Close()
-
-			// try converting to doc store
-			// TODO : filter should be passed as arg to query
-			ds, _ := peerDb.(iface.EventLogStore)
-			defer ds.Close()
-			defer ds.Drop()
-
-			res, err := ds.List(ctx, &orbitdb.StreamOptions{Amount: &infinity})
-			if err != nil {
-				logChan <- Log{RecoverableErr, err}
-				return
-			}
-
-			fmt.Print(res)
-		}(dbid)
-	}
-
-	wg.Wait()
 }

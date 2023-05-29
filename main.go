@@ -15,6 +15,9 @@ import (
 	"github.com/ipfs/kubo/core"
 )
 
+// TODO : should have a peers store to permanently add/remove known peers which
+// we will try to connect to on startup
+//
 // represents the application across go routines
 type PeersDB struct {
 	ID string // node identifier TODO : can probably get it from LogDB somehow
