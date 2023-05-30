@@ -6,6 +6,7 @@ import (
 	"time"
 
 	orbitdb "berty.tech/go-orbit-db"
+	"berty.tech/go-orbit-db/accesscontroller"
 	"berty.tech/go-orbit-db/iface"
 	"github.com/libp2p/go-libp2p/core/event"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -81,9 +82,20 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 				addr := string(msg.Data())
 				create := false
 				storeType := "eventlog"
+
+				// give anyone write access
+				ac := &accesscontroller.CreateAccessControllerOptions{
+					Access: map[string][]string{
+						"write": {
+							"*",
+						},
+					},
+				}
+
 				dbopts := orbitdb.CreateDBOptions{
-					Create:    &create,
-					StoreType: &storeType,
+					AccessController: ac,
+					Create:           &create,
+					StoreType:        &storeType,
 				}
 
 				store, err := (*peersDB.Orbit).Open(ctx, addr, &dbopts)

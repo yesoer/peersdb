@@ -7,6 +7,7 @@ import (
 	"os"
 
 	orbitdb "berty.tech/go-orbit-db"
+	"berty.tech/go-orbit-db/accesscontroller"
 	"berty.tech/go-orbit-db/iface"
 	"github.com/ipfs/kubo/core/coreapi"
 	"go.uber.org/zap"
@@ -57,9 +58,23 @@ func initPeer(peersDB *PeersDB) error {
 		return err
 	}
 
-	// create document store, with "hash" as the index
+	// create eventlog store or load it from disk and give anyone write access
 	storeType := "eventlog"
-	dbopts := orbitdb.CreateDBOptions{Create: flagRoot, StoreType: &storeType}
+
+	ac := &accesscontroller.CreateAccessControllerOptions{
+		Access: map[string][]string{
+			"write": {
+				"*",
+			},
+		},
+	}
+
+	dbopts := orbitdb.CreateDBOptions{
+		Create:           flagRoot,
+		StoreType:        &storeType,
+		AccessController: ac,
+	}
+
 	addr := "transactions"
 	store, err := orbit.Open(ctx, addr, &dbopts)
 	if err != nil {

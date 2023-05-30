@@ -129,7 +129,7 @@ func createRepo(temporary bool) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to init ephemeral node: %+v", err)
 	}
-	log.Printf("Path of the temporary IPFS repository : %s\n", repoPath)
+	log.Printf("Path of the IPFS repository : %s\n", repoPath)
 
 	return repoPath, nil
 }
