@@ -126,4 +126,5 @@ func main() {
 	<-termCtx.Done()
 	fmt.Printf("Shutdown")
 	// DEVNOTE : general graceful shutdown stuff may go here
+	(*peersDB.Orbit).Close()
 }

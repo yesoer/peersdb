@@ -100,12 +100,5 @@ func initPeer(peersDB *PeersDB) error {
 	peersDB.Node = node
 	peersDB.Orbit = &orbit
 
-	// cleanup
-	// TODO : check if this is enough/even necessary
-	// TODO : propagate these to main for graceful shutdown
-	// orbit.Close()
-	// os.RemoveAll(extIPFSNode.repoPath)
-	// cancel()
-
 	return nil
 }
