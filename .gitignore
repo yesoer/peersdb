@@ -16,3 +16,6 @@
 
 # Repositories
 peersdb*
+
+# Macos files
+.DS_Store
