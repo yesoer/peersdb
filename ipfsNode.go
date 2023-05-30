@@ -18,6 +18,7 @@ import (
 
 var flagExp = flag.Bool("experimental", true, "enable experimental features")
 var flagPort = flag.String("port", "4001", "configure application port")
+var flagRepo = flag.String("repo", "peersdb", "configure the repo/directory name for the ipfs node")
 
 // Setup ipfs plugins
 func setupPlugins(externalPluginsPath string) error {
@@ -39,13 +40,34 @@ func setupPlugins(externalPluginsPath string) error {
 	return nil
 }
 
+// exists returns whether the given file or directory exists
+func exists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
+}
+
 // Creates a temporary ipfs repo, from the docs :
 // "ipfs stores all its settings and internal data in a directory called the repository"
 // removal has to be taken care of by caller
-func createTempRepo() (string, error) {
-	repoPath, err := os.MkdirTemp("", "ipfs-shell")
+func createRepo(temporary bool) (string, error) {
+	repoPath := "./" + *flagRepo
+
+	var err error
+	if temporary {
+		repoPath, err = os.MkdirTemp("", *flagRepo)
+	} else if exists, _ := exists(repoPath); !exists {
+		perm := int(0777) // full permissions
+		err = os.Mkdir(*flagRepo, os.FileMode(perm))
+	}
+
 	if err != nil {
-		return "", fmt.Errorf("failed to get temp dir: %s", err)
+		return "", fmt.Errorf("failed to get dir: %s", err)
 	}
 
 	// Create a config with default options and a 2048 bit key
@@ -148,7 +170,7 @@ func SpawnEphemeral(ctx context.Context) (*core.IpfsNode, error) {
 	}
 
 	// Create a Temporary IPFS Repo
-	repoPath, err := createTempRepo()
+	repoPath, err := createRepo(false)
 	if err != nil {
 		return nil, err
 	}

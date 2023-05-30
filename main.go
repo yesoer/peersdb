@@ -71,6 +71,7 @@ func main() {
 	}()
 
 	// init application
+	// TODO : this needs centralized error handling aswell but first check out logging via orbitdb
 	var peersDB PeersDB
 	err := initPeer(&peersDB)
 	if err != nil {
