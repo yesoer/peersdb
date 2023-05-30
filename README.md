@@ -16,6 +16,7 @@ go run main.go ipfsNode.go ipfsNodeAct.go service.go shell.go initPeer.go
 | -port | sets the application port | 4001 |
 | -shell | enables the shell interface | false |
 | -root | makes this node a root node meaning it will create it's own datastore | false |
+| -repo | configure the repo/directory name for the ipfs node | peersdb |
 
 # Contribution :
 
