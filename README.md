@@ -4,7 +4,7 @@ A distributed p2p database, based on orbitdb but extend with blockchain technolo
 # Usage
 
 ```shell
-go run main.go ipfsNode.go ipfsNodeAct.go service.go shell.go initPeer.go 
+go run main.go ipfsNode.go ipfsNodeAct.go service.go shell.go initPeer.go config.go
 ```
 
 ## Flags
