@@ -30,6 +30,8 @@ type PeersDB struct {
 	// mutex to control access to the eventlog db across go routines
 	// TODO : use
 	EventLogDBMtx sync.RWMutex
+
+	Config *Config
 }
 
 var flagShell = flag.Bool("shell", false, "enable shell interface")

@@ -106,6 +106,10 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 				db := store.(iface.EventLogStore)
 				db.Load(ctx, -1)
 				peersDB.EventLogDB = &db
+
+				// persist store address
+				peersDB.Config.StoreAddr = addr
+				SaveConfig(peersDB.Config)
 			}
 		}
 	}()

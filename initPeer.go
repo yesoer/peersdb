@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	orbitdb "berty.tech/go-orbit-db"
 	"berty.tech/go-orbit-db/accesscontroller"
@@ -58,9 +59,7 @@ func initPeer(peersDB *PeersDB) error {
 		return err
 	}
 
-	// create eventlog store or load it from disk and give anyone write access
-	storeType := "eventlog"
-
+	// give write access to all
 	ac := &accesscontroller.CreateAccessControllerOptions{
 		Access: map[string][]string{
 			"write": {
@@ -69,22 +68,34 @@ func initPeer(peersDB *PeersDB) error {
 		},
 	}
 
+	// enable create if this is a root node
+	storeType := "eventlog"
 	dbopts := orbitdb.CreateDBOptions{
 		Create:           flagRoot,
 		StoreType:        &storeType,
 		AccessController: ac,
 	}
 
-	addr := "transactions"
-	store, err := orbit.Open(ctx, addr, &dbopts)
+	// see if there is a persisted store available
+	config, err := LoadConfig()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Connect to a peer to resolve : %v\n", err)
+		fmt.Fprintf(os.Stderr, "Couldn't load config : %+v\n", err)
+	}
+
+	store, err := orbit.Open(ctx, config.StoreAddr, &dbopts)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\nTry resolving it by connecting to a peer\n", err)
 	} else {
 		db := store.(iface.EventLogStore)
 		db.Load(ctx, -1)
 		peersDB.EventLogDB = &db
+
+		// persist store address
+		config.StoreAddr = db.Address().String()
+		SaveConfig(config)
 	}
 
+	peersDB.Config = config
 	peersDB.ID = node.Identity.String()
 	peersDB.Node = node
 	peersDB.Orbit = &orbit
