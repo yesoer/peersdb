@@ -15,7 +15,7 @@ go run main.go ipfsNode.go ipfsNodeAct.go service.go shell.go initPeer.go
 | -devlogs | enables development level logging | false |
 | -port | sets the application port | 4001 |
 | -shell | enables the shell interface | false |
-
+| -root | makes this node a root node meaning it will create it's own datastore | false |
 
 # Contribution :
 
@@ -62,3 +62,13 @@ As for the **commit body** there is no mandatory structure as of now.
 **Issues and Pull Requests** for now will not have any set guidelines.
 
 As a rule of thumb for **merging** make sure to rebase before doing so.
+
+# Architecture
+
+## Replication
+
+A new peersdb instance could be a root instance. The root instance creates a 
+"transactions" orbitdb EventLog store. A new non-root instance will start and
+when it's connected to root it will replicate said store. From now on they 
+will replicate via events. If a node restarts they will try to load the datastore
+from disk.
