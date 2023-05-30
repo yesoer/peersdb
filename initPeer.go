@@ -51,10 +51,15 @@ func initPeer(peersDB *PeersDB) error {
 	}
 
 	// create db
+	cacheDir := filepath.Join(os.Getenv("HOME"), ".cache")
+	cache := filepath.Join(cacheDir, "peersdb", "transactions-store")
 	orbit, err = orbitdb.NewOrbitDB(
 		ctx,
 		coreAPI,
-		&orbitdb.NewOrbitDBOptions{Logger: devLog})
+		&orbitdb.NewOrbitDBOptions{
+			Logger:    devLog,
+			Directory: &cache,
+		})
 	if err != nil {
 		return err
 	}
