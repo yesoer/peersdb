@@ -71,5 +71,10 @@ func shell(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, log
 			logChan <- Log{RecoverableErr, errors.New("command not supported")}
 			continue
 		}
+
+		// await response and log it
+		res := <-resChan
+		logChan <- Log{Print, res}
+		logChan <- Log{Print, "\n"}
 	}
 }
