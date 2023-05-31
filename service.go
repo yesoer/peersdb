@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	orbitdb "berty.tech/go-orbit-db"
@@ -119,9 +118,11 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 	// TODO : send results back to api via respond channel
 	for {
 		req := <-reqChan
+		var res interface{}
+
 		switch req.Method.Cmd {
 		case GET.Cmd:
-
+			res = "Not implemented"
 		case POST.Cmd:
 			db := peersDB.EventLogDB
 			if db == nil {
@@ -146,12 +147,15 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 				logChan <- Log{RecoverableErr, err}
 			}
 
+			res = "File uploaded"
+
 		case CONNECT.Cmd:
 			peerId := req.Args[0]
 			err = ConnectToPeers(ctx, peersDB, []string{peerId}, logChan)
 			if err != nil {
 				logChan <- Log{RecoverableErr, err}
 			}
+			res = "Peer id processed"
 
 		// TODO : only works once ?!
 		case QUERY.Cmd:
@@ -166,11 +170,13 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 			(*db).Load(ctx, infinity)
 			// TODO : await replication/ready event
 			time.Sleep(time.Second * 5)
-			res, err := (*db).List(ctx, &orbitdb.StreamOptions{Amount: &infinity})
+			res, err = (*db).List(ctx, &orbitdb.StreamOptions{Amount: &infinity})
 			if err != nil {
 				logChan <- Log{RecoverableErr, err}
 			}
-			fmt.Print(res)
 		}
+
+		// send response
+		resChan <- res
 	}
 }
