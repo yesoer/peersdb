@@ -9,14 +9,43 @@ import (
 	"berty.tech/go-orbit-db/iface"
 	"github.com/libp2p/go-libp2p/core/event"
 	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/multiformats/go-multiaddr"
 	"golang.org/x/net/context"
 )
+
+type PeerDoc struct {
+	AddrInfo peer.AddrInfo
+}
 
 func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, logChan chan Log) {
 	coreAPI := (*peersDB.Orbit).IPFS()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel() // TODO : correct ?
+
+	//-------------------------------------------------------------------------
+	// CONNECT TO KNOWN PEERS
+	//-------------------------------------------------------------------------
+
+	// get all peers address infos
+	peers, err := (*peersDB.PeerAddrDB).Query(ctx, func(doc interface{}) (bool, error) {
+		return true, nil
+	})
+	if err != nil {
+		logChan <- Log{NonRecoverableErr, err}
+	}
+
+	peerMAs := make([][]multiaddr.Multiaddr, len(peers))
+	for i, peer := range peers {
+		p := peer.(PeerDoc)
+		peerMAs[i] = p.AddrInfo.Addrs
+	}
+
+	// try connecting to known peers
+	// TODO : solve channel issue
+	dummyChan := make(chan Log, 1)
+	ConnectToPeers(ctx, peersDB, peerMAs, dummyChan)
 
 	//-------------------------------------------------------------------------
 	// EVENTS
@@ -32,7 +61,7 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 
 	// wait and handle connectedness changed event
 	go func() {
-		db := peersDB.EventLogDB
+		db := peersDB.TransactionsDB
 
 		for e := range subipfs.Out() {
 			e, ok := e.(event.EvtPeerConnectednessChanged)
@@ -69,15 +98,26 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 	// connects (see "EVENTS" section : "EvtPeerConnectednessChanged")
 	go func() {
 		for {
-			// received data should contain the id of the peers db
 			msg, err := sub.Next(context.Background())
 			if err != nil {
 				logChan <- Log{NonRecoverableErr, err}
 				return
 			}
 
+			// store the peers addresses
+			peerid := msg.From()
+			addrInfo, err := (*peersDB.Orbit).IPFS().Dht().FindPeer(ctx, peerid)
+			if err != nil {
+				logChan <- Log{RecoverableErr, err}
+			}
+
+			peerdoc := PeerDoc{
+				AddrInfo: addrInfo,
+			}
+			(*peersDB.PeerAddrDB).Put(ctx, peerdoc)
+
 			// in case we started without any db, replicate this one
-			if peersDB.EventLogDB == nil {
+			if peersDB.TransactionsDB == nil {
 				addr := string(msg.Data())
 				create := false
 				storeType := "eventlog"
@@ -104,10 +144,10 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 
 				db := store.(iface.EventLogStore)
 				db.Load(ctx, -1)
-				peersDB.EventLogDB = &db
+				peersDB.TransactionsDB = &db
 
 				// persist store address
-				peersDB.Config.StoreAddr = addr
+				peersDB.Config.TransactionsStoreAddr = addr
 				SaveConfig(peersDB.Config)
 			}
 		}
@@ -124,7 +164,7 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 		case GET.Cmd:
 			res = "Not implemented"
 		case POST.Cmd:
-			db := peersDB.EventLogDB
+			db := peersDB.TransactionsDB
 			if db == nil {
 				err = errors.New("you need a datastore first, try connecting to a peer")
 				logChan <- Log{RecoverableErr, err}
@@ -150,16 +190,18 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 			res = "File uploaded"
 
 		case CONNECT.Cmd:
-			peerId := req.Args[0]
-			err = ConnectToPeers(ctx, peersDB, []string{peerId}, logChan)
+			peerAddr, err := multiaddr.NewMultiaddr(req.Args[0])
 			if err != nil {
 				logChan <- Log{RecoverableErr, err}
 			}
-			res = "Peer id processed"
+
+			peers := [][]multiaddr.Multiaddr{{peerAddr}}
+			ConnectToPeers(ctx, peersDB, peers, logChan)
+			res = "Peer address processed"
 
 		// TODO : only works once ?!
 		case QUERY.Cmd:
-			db := peersDB.EventLogDB
+			db := peersDB.TransactionsDB
 			if db == nil {
 				err = errors.New("you need a datastore first, try connecting to a peer")
 				logChan <- Log{RecoverableErr, err}

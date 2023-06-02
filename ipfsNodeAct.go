@@ -9,7 +9,7 @@ import (
 	icore "github.com/ipfs/interface-go-ipfs-core"
 	"github.com/ipfs/interface-go-ipfs-core/path"
 	"github.com/libp2p/go-libp2p/core/peer"
-	ma "github.com/multiformats/go-multiaddr"
+	"github.com/multiformats/go-multiaddr"
 )
 
 // Adds a file to orbitdb by adding it to ipfs and storing the resulting hash
@@ -48,29 +48,35 @@ func getIPFSNode(path string) (files.Node, error) {
 
 var loadPluginsOnce sync.Once
 
-// try to connect to the given peers
-func ConnectToPeers(ctx context.Context, peersDB *PeersDB, peers []string, logChan chan Log) error {
+// try to connect to the given peers, each peer may be represented by multiple
+// addresses, hence they are represented by a two dimensional slice
+func ConnectToPeers(ctx context.Context,
+	peersDB *PeersDB,
+	peers [][]multiaddr.Multiaddr,
+	logChan chan Log) {
+
 	var wg sync.WaitGroup
 
 	api := (*peersDB.Orbit).IPFS()
 
 	// extract and map ids to addresses
 	peerInfos := make(map[peer.ID]*peer.AddrInfo, len(peers))
-	for _, addrStr := range peers {
-		addr, err := ma.NewMultiaddr(addrStr)
-		if err != nil {
-			return err
+	for _, peerAddrs := range peers {
+		for _, addr := range peerAddrs {
+			pii, err := peer.AddrInfoFromP2pAddr(addr)
+			if err != nil {
+				logChan <- Log{RecoverableErr, err}
+				continue
+			}
+
+			pi, ok := peerInfos[pii.ID]
+			if !ok {
+				pi = &peer.AddrInfo{ID: pii.ID}
+				peerInfos[pi.ID] = pi
+			}
+
+			pi.Addrs = append(pi.Addrs, pii.Addrs...)
 		}
-		pii, err := peer.AddrInfoFromP2pAddr(addr)
-		if err != nil {
-			return err
-		}
-		pi, ok := peerInfos[pii.ID]
-		if !ok {
-			pi = &peer.AddrInfo{ID: pii.ID}
-			peerInfos[pi.ID] = pi
-		}
-		pi.Addrs = append(pi.Addrs, pii.Addrs...)
 	}
 
 	// try to connect to peers
@@ -86,5 +92,4 @@ func ConnectToPeers(ctx context.Context, peersDB *PeersDB, peers []string, logCh
 		}(peerInfo)
 	}
 	wg.Wait()
-	return nil
 }

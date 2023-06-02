@@ -23,13 +23,15 @@ type PeersDB struct {
 	ID string // node identifier TODO : can probably get it from LogDB somehow
 
 	// data storage
-	Node       *core.IpfsNode         // TODO : only because of node.PeerHost.EventBus
-	EventLogDB *orbitdb.EventLogStore // the log which holds all transactions
-	Orbit      *iface.OrbitDB
+	Node           *core.IpfsNode         // TODO : only because of node.PeerHost.EventBus
+	TransactionsDB *orbitdb.EventLogStore // the log which holds all transactions
+	PeerAddrDB     *orbitdb.DocumentStore // the store which holds all known peers
+	Orbit          *iface.OrbitDB
 
 	// mutex to control access to the eventlog db across go routines
 	// TODO : use
-	EventLogDBMtx sync.RWMutex
+	TransactionsDBMtx sync.RWMutex
+	PeerAddrDBMtx     sync.RWMutex
 
 	Config *Config
 }
@@ -124,7 +126,7 @@ func main() {
 
 	// await termination context
 	<-termCtx.Done()
-	fmt.Printf("Shutdown")
+	logChan <- Log{Info, "Shutdown"}
 	// DEVNOTE : general graceful shutdown stuff may go here
 	(*peersDB.Orbit).Close()
 }
