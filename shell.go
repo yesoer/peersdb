@@ -33,13 +33,23 @@ type Request struct {
 // TODO : wait for response ? could/should that be a method on Request struct ?
 //
 //	because it's a very repetitive task
-func fwdCmd(cmdList []string, method Method, reqChan chan Request, logChan chan Log) {
+func processReq(cmdList []string, method Method,
+	reqChan chan Request,
+	resChan chan interface{},
+	logChan chan Log) {
+
 	if len(cmdList) != method.ArgCnt+1 {
 		logChan <- Log{RecoverableErr, errors.New("double check the given args")}
 		return
 	}
 
+	// send request
 	reqChan <- Request{method, cmdList[1:]}
+
+	// await response and log it
+	res := <-resChan
+	logChan <- Log{Print, res}
+	logChan <- Log{Print, "\n"}
 }
 
 // start listening for commands, implements the api for the user
@@ -60,21 +70,17 @@ func shell(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, log
 		cmdList := strings.Split(cmd, " ")
 		switch cmdList[0] {
 		case GET.Cmd:
-			fwdCmd(cmdList, GET, reqChan, logChan)
+			processReq(cmdList, GET, reqChan, resChan, logChan)
 		case POST.Cmd:
-			fwdCmd(cmdList, POST, reqChan, logChan)
+			processReq(cmdList, POST, reqChan, resChan, logChan)
 		case CONNECT.Cmd:
-			fwdCmd(cmdList, CONNECT, reqChan, logChan)
+			processReq(cmdList, CONNECT, reqChan, resChan, logChan)
 		case QUERY.Cmd:
-			fwdCmd(cmdList, QUERY, reqChan, logChan)
+			processReq(cmdList, QUERY, reqChan, resChan, logChan)
 		default:
 			logChan <- Log{RecoverableErr, errors.New("command not supported")}
 			continue
 		}
 
-		// await response and log it
-		res := <-resChan
-		logChan <- Log{Print, res}
-		logChan <- Log{Print, "\n"}
 	}
 }
