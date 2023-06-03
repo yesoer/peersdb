@@ -16,10 +16,6 @@ import (
 	"github.com/ipfs/kubo/repo/fsrepo"
 )
 
-var flagExp = flag.Bool("experimental", true, "enable experimental features")
-var flagPort = flag.String("port", "4001", "configure application port")
-var flagRepo = flag.String("repo", "peersdb", "configure the repo/directory name for the ipfs node")
-
 // Setup ipfs plugins
 func setupPlugins(externalPluginsPath string) error {
 	// Load any external plugins if available on externalPluginsPath

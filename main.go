@@ -34,8 +34,6 @@ type PeersDB struct {
 	Config *Config
 }
 
-var flagShell = flag.Bool("shell", false, "enable shell interface")
-
 // TODO : check out orbitdb logger (apparently safe for concurrent use and lightweight
 type LogType uint8
 

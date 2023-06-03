@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ type Config struct {
 //
 // loads the persistent config file into config struct
 func LoadConfig() (*Config, error) {
-	filename := *flagRepo + "_config"
+	filename := *FlagRepo + "_config"
 
 	file, err := os.Open(filename)
 	if err != nil {
@@ -45,7 +45,7 @@ func LoadConfig() (*Config, error) {
 
 // writes persistent config file from config struct
 func SaveConfig(config *Config) error {
-	filename := *flagRepo + "_config"
+	filename := *FlagRepo + "_config"
 
 	data, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
