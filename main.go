@@ -84,6 +84,11 @@ func main() {
 		go api.Shell(&peersDB, reqChan, resChan, logChan)
 	}
 
+	// start the http interface
+	if *config.FlagHTTP {
+		go api.ServeHTTP()
+	}
+
 	// await termination context
 	<-termCtx.Done()
 	fmt.Printf("Shutdown")
