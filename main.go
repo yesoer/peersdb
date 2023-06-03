@@ -37,7 +37,7 @@ func main() {
 	// init application
 	// TODO : this needs centralized error handling aswell but first check out logging via orbitdb
 	var peersDB app.PeersDB
-	err := initPeer(&peersDB)
+	err := app.InitPeer(&peersDB)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error on setup:\n %+v\n", err)
 		os.Exit(1)
@@ -48,7 +48,7 @@ func main() {
 	// TODO : should be able to hold configurable many requests as buffer
 	// TODO : right now only one api can work and it cannot process requests in
 	//		  parallel
-	reqChan := make(chan api.Request, 100)
+	reqChan := make(chan app.Request, 100)
 	resChan := make(chan interface{}, 100)
 
 	// channel for centralized loggin
@@ -77,7 +77,7 @@ func main() {
 
 	// handle the peerdbs lifecycle after start and internal interface for
 	// shell/api requests
-	go service(&peersDB, reqChan, resChan, logChan)
+	go app.Service(&peersDB, reqChan, resChan, logChan)
 
 	// start the shell interface
 	if *config.FlagShell {
