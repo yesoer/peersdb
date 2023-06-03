@@ -2,10 +2,11 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
+	"peersdb/app"
+	"peersdb/config"
 
 	orbitdb "berty.tech/go-orbit-db"
 	"berty.tech/go-orbit-db/accesscontroller"
@@ -21,7 +22,7 @@ var orbit iface.OrbitDB
 // DEVNOTE : PeersDB.EventLogDB may be nil after init ! that is if it's not root
 // and has no transaction datastore locally. A datastore will be replicated on
 // the first established peer connection
-func initPeer(peersDB *PeersDB) error {
+func initPeer(peersDB *app.PeersDB) error {
 
 	// start ipfs node
 	ctx := context.Background()
@@ -40,7 +41,7 @@ func initPeer(peersDB *PeersDB) error {
 
 	// switch between noop and dev logger via flag
 	var devLog *zap.Logger
-	if *flagDevLogs {
+	if *config.FlagDevLogs {
 		devLog, err = zap.NewDevelopment()
 		if err != nil {
 			return err
@@ -49,7 +50,7 @@ func initPeer(peersDB *PeersDB) error {
 
 	// create db
 	cacheDir := filepath.Join(os.Getenv("HOME"), ".cache")
-	cache := filepath.Join(cacheDir, "peersdb", *flagRepo, "transactions-store")
+	cache := filepath.Join(cacheDir, "peersdb", *config.FlagRepo, "transactions-store")
 	orbit, err = orbitdb.NewOrbitDB(
 		ctx,
 		coreAPI,
@@ -73,18 +74,18 @@ func initPeer(peersDB *PeersDB) error {
 	// enable create if this is a root node
 	storeType := "eventlog"
 	dbopts := orbitdb.CreateDBOptions{
-		Create:           flagRoot,
+		Create:           config.FlagRoot,
 		StoreType:        &storeType,
 		AccessController: ac,
 	}
 
 	// see if there is a persisted store available
-	config, err := LoadConfig()
+	conf, err := config.LoadConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Couldn't load config : %+v\n", err)
 	}
 
-	store, err := orbit.Open(ctx, config.StoreAddr, &dbopts)
+	store, err := orbit.Open(ctx, conf.StoreAddr, &dbopts)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\nTry resolving it by connecting to a peer\n", err)
 	} else {
@@ -93,11 +94,11 @@ func initPeer(peersDB *PeersDB) error {
 		peersDB.EventLogDB = &db
 
 		// persist store address
-		config.StoreAddr = db.Address().String()
-		SaveConfig(config)
+		conf.StoreAddr = db.Address().String()
+		config.SaveConfig(conf)
 	}
 
-	peersDB.Config = config
+	peersDB.Config = conf
 	peersDB.ID = node.Identity.String()
 	peersDB.Node = node
 	peersDB.Orbit = &orbit

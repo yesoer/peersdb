@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"os"
+	"peersdb/app"
 	"sync"
 
 	files "github.com/ipfs/go-ipfs-files"
@@ -49,7 +50,7 @@ func getIPFSNode(path string) (files.Node, error) {
 var loadPluginsOnce sync.Once
 
 // try to connect to the given peers
-func ConnectToPeers(ctx context.Context, peersDB *PeersDB, peers []string, logChan chan Log) error {
+func ConnectToPeers(ctx context.Context, peersDB *app.PeersDB, peers []string, logChan chan app.Log) error {
 	var wg sync.WaitGroup
 
 	api := (*peersDB.Orbit).IPFS()
@@ -81,7 +82,7 @@ func ConnectToPeers(ctx context.Context, peersDB *PeersDB, peers []string, logCh
 			err := api.Swarm().Connect(ctx, *peerInfo)
 			if err != nil {
 				// TODO : should be sent via Response channel
-				logChan <- Log{RecoverableErr, err}
+				logChan <- app.Log{Type: app.RecoverableErr, Data: err}
 			}
 		}(peerInfo)
 	}
