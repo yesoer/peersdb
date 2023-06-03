@@ -16,9 +16,6 @@ import (
 
 var orbit iface.OrbitDB
 
-var flagDevLogs = flag.Bool("devlogs", false, "enable development level logging")
-var flagRoot = flag.Bool("root", false, "creating a root node means creating a new datastore")
-
 // starts the ipfs node and creates the orbitdb structures on top of it
 //
 // DEVNOTE : PeersDB.EventLogDB may be nil after init ! that is if it's not root
