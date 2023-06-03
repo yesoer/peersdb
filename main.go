@@ -7,47 +7,11 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"sync"
+	"peersdb/api"
+	"peersdb/app"
+	"peersdb/config"
 	"syscall"
-
-	orbitdb "berty.tech/go-orbit-db"
-	"berty.tech/go-orbit-db/iface"
-	"github.com/ipfs/kubo/core"
 )
-
-// TODO : should have a peers store to permanently add/remove known peers which
-// we will try to connect to on startup
-//
-// represents the application across go routines
-type PeersDB struct {
-	ID string // node identifier TODO : can probably get it from LogDB somehow
-
-	// data storage
-	Node       *core.IpfsNode         // TODO : only because of node.PeerHost.EventBus
-	EventLogDB *orbitdb.EventLogStore // the log which holds all transactions
-	Orbit      *iface.OrbitDB
-
-	// mutex to control access to the eventlog db across go routines
-	// TODO : use
-	EventLogDBMtx sync.RWMutex
-
-	Config *Config
-}
-
-// TODO : check out orbitdb logger (apparently safe for concurrent use and lightweight
-type LogType uint8
-
-const (
-	RecoverableErr    LogType = 0
-	NonRecoverableErr LogType = 1
-	Info              LogType = 2
-	Print             LogType = 3
-)
-
-type Log struct {
-	Type LogType
-	Data interface{}
-}
 
 // main function which terminates when SIGINT or SIGTERM is received
 // via termCtx/termCancel, any cancellation can be forwarded to go routines for
@@ -72,7 +36,7 @@ func main() {
 
 	// init application
 	// TODO : this needs centralized error handling aswell but first check out logging via orbitdb
-	var peersDB PeersDB
+	var peersDB app.PeersDB
 	err := initPeer(&peersDB)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error on setup:\n %+v\n", err)
@@ -84,28 +48,28 @@ func main() {
 	// TODO : should be able to hold configurable many requests as buffer
 	// TODO : right now only one api can work and it cannot process requests in
 	//		  parallel
-	reqChan := make(chan Request, 100)
+	reqChan := make(chan api.Request, 100)
 	resChan := make(chan interface{}, 100)
 
 	// channel for centralized loggin
-	logChan := make(chan Log, 100)
+	logChan := make(chan app.Log, 100)
 
 	// handle logging channel
 	go func() {
 		for {
 			l := <-logChan
 			switch l.Type {
-			case RecoverableErr:
+			case app.RecoverableErr:
 				err := l.Data.(error)
 				fmt.Fprintf(os.Stderr, "Recovering from : %v\n", err)
-			case NonRecoverableErr:
+			case app.NonRecoverableErr:
 				err := l.Data.(error)
 				fmt.Fprintf(os.Stderr, "Cannot recover from : %+v\n", err)
 				termCancel()
-			case Info:
+			case app.Info:
 				toLog := l.Data.(string)
 				log.Printf("%s\n", toLog)
-			case Print:
+			case app.Print:
 				fmt.Print(l.Data)
 			}
 		}
@@ -116,8 +80,8 @@ func main() {
 	go service(&peersDB, reqChan, resChan, logChan)
 
 	// start the shell interface
-	if *flagShell {
-		go shell(&peersDB, reqChan, resChan, logChan)
+	if *config.FlagShell {
+		go api.Shell(&peersDB, reqChan, resChan, logChan)
 	}
 
 	// await termination context
