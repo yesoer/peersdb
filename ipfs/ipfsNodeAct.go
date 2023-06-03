@@ -1,11 +1,11 @@
-package main
+package ipfs
 
 import (
 	"context"
 	"os"
-	"peersdb/app"
 	"sync"
 
+	"berty.tech/go-orbit-db/iface"
 	files "github.com/ipfs/go-ipfs-files"
 	icore "github.com/ipfs/interface-go-ipfs-core"
 	"github.com/ipfs/interface-go-ipfs-core/path"
@@ -50,10 +50,10 @@ func getIPFSNode(path string) (files.Node, error) {
 var loadPluginsOnce sync.Once
 
 // try to connect to the given peers
-func ConnectToPeers(ctx context.Context, peersDB *app.PeersDB, peers []string, logChan chan app.Log) error {
+func ConnectToPeers(ctx context.Context, orbitdb *iface.OrbitDB, peers []string) error {
 	var wg sync.WaitGroup
 
-	api := (*peersDB.Orbit).IPFS()
+	api := (*orbitdb).IPFS()
 
 	// extract and map ids to addresses
 	peerInfos := make(map[peer.ID]*peer.AddrInfo, len(peers))
@@ -82,7 +82,6 @@ func ConnectToPeers(ctx context.Context, peersDB *app.PeersDB, peers []string, l
 			err := api.Swarm().Connect(ctx, *peerInfo)
 			if err != nil {
 				// TODO : should be sent via Response channel
-				logChan <- app.Log{Type: app.RecoverableErr, Data: err}
 			}
 		}(peerInfo)
 	}
