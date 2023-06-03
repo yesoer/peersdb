@@ -8,34 +8,13 @@ import (
 	"strings"
 )
 
-// Method defines simple schemas for actions to perform on the db
-type Method struct {
-	Cmd    string
-	ArgCnt int
-}
-
-var (
-	GET     Method = Method{"get", 1}     // needs the filepath
-	POST    Method = Method{"post", 1}    // needs the cid
-	CONNECT Method = Method{"connect", 1} // needs the peer iden
-	QUERY   Method = Method{"query", 0}
-)
-
-// Requests are an abstraction for the communication between this applications
-// various apis (shell, http, grpc etc.) and the actual db service
-// (n to 1 relation at the moment)
-type Request struct {
-	Method Method
-	Args   []string
-}
-
 // checks whether a string list matches a method definition and forwards the
 // resulting request
 // TODO : wait for response ? could/should that be a method on Request struct ?
 //
 //	because it's a very repetitive task
-func processReq(cmdList []string, method Method,
-	reqChan chan Request,
+func processReq(cmdList []string, method app.Method,
+	reqChan chan app.Request,
 	resChan chan interface{},
 	logChan chan app.Log) {
 
@@ -47,7 +26,7 @@ func processReq(cmdList []string, method Method,
 	}
 
 	// send request
-	reqChan <- Request{method, cmdList[1:]}
+	reqChan <- app.Request{Method: method, Args: cmdList[1:]}
 
 	// await response and log it
 	res := <-resChan
@@ -57,7 +36,7 @@ func processReq(cmdList []string, method Method,
 
 // start listening for commands, implements the api for the user
 func Shell(peersDB *app.PeersDB,
-	reqChan chan Request,
+	reqChan chan app.Request,
 	resChan chan interface{},
 	logChan chan app.Log) {
 
@@ -79,14 +58,14 @@ func Shell(peersDB *app.PeersDB,
 		cmd = strings.TrimSpace(cmd)
 		cmdList := strings.Split(cmd, " ")
 		switch cmdList[0] {
-		case GET.Cmd:
-			processReq(cmdList, GET, reqChan, resChan, logChan)
-		case POST.Cmd:
-			processReq(cmdList, POST, reqChan, resChan, logChan)
-		case CONNECT.Cmd:
-			processReq(cmdList, CONNECT, reqChan, resChan, logChan)
-		case QUERY.Cmd:
-			processReq(cmdList, QUERY, reqChan, resChan, logChan)
+		case app.GET.Cmd:
+			processReq(cmdList, app.GET, reqChan, resChan, logChan)
+		case app.POST.Cmd:
+			processReq(cmdList, app.POST, reqChan, resChan, logChan)
+		case app.CONNECT.Cmd:
+			processReq(cmdList, app.CONNECT, reqChan, resChan, logChan)
+		case app.QUERY.Cmd:
+			processReq(cmdList, app.QUERY, reqChan, resChan, logChan)
 		default:
 			logChan <- app.Log{
 				Type: app.RecoverableErr,
