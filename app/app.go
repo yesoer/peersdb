@@ -1,0 +1,44 @@
+package app
+
+import (
+	"peersdb/config"
+	"sync"
+
+	orbitdb "berty.tech/go-orbit-db"
+	"berty.tech/go-orbit-db/iface"
+	"github.com/ipfs/kubo/core"
+)
+
+// TODO : should have a peers store to permanently add/remove known peers which
+// we will try to connect to on startup
+//
+// represents the application across go routines
+type PeersDB struct {
+	ID string // node identifier TODO : can probably get it from LogDB somehow
+
+	// data storage
+	Node       *core.IpfsNode         // TODO : only because of node.PeerHost.EventBus
+	EventLogDB *orbitdb.EventLogStore // the log which holds all transactions
+	Orbit      *iface.OrbitDB
+
+	// mutex to control access to the eventlog db across go routines
+	// TODO : use
+	EventLogDBMtx sync.RWMutex
+
+	Config *config.Config
+}
+
+// TODO : check out orbitdb logger (apparently safe for concurrent use and lightweight
+type LogType uint8
+
+const (
+	RecoverableErr    LogType = 0
+	NonRecoverableErr LogType = 1
+	Info              LogType = 2
+	Print             LogType = 3
+)
+
+type Log struct {
+	Type LogType
+	Data interface{}
+}
