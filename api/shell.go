@@ -1,9 +1,10 @@
-package main
+package api
 
 import (
 	"bufio"
 	"errors"
 	"os"
+	"peersdb/app"
 	"strings"
 )
 
@@ -36,10 +37,12 @@ type Request struct {
 func processReq(cmdList []string, method Method,
 	reqChan chan Request,
 	resChan chan interface{},
-	logChan chan Log) {
+	logChan chan app.Log) {
 
 	if len(cmdList) != method.ArgCnt+1 {
-		logChan <- Log{RecoverableErr, errors.New("double check the given args")}
+		logChan <- app.Log{
+			Type: app.RecoverableErr,
+			Data: errors.New("double check the given args")}
 		return
 	}
 
@@ -48,20 +51,27 @@ func processReq(cmdList []string, method Method,
 
 	// await response and log it
 	res := <-resChan
-	logChan <- Log{Print, res}
-	logChan <- Log{Print, "\n"}
+	logChan <- app.Log{Type: app.Print, Data: res}
+	logChan <- app.Log{Type: app.Print, Data: "\n"}
 }
 
 // start listening for commands, implements the api for the user
-func shell(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, logChan chan Log) {
-	logChan <- Log{Info, "Starting shell"}
+func Shell(peersDB *app.PeersDB,
+	reqChan chan Request,
+	resChan chan interface{},
+	logChan chan app.Log) {
+
+	logChan <- app.Log{
+		Type: app.Info,
+		Data: "Starting shell"}
+
 	for {
 		// read the shell input
 		reader := bufio.NewReader(os.Stdin)
-		logChan <- Log{Print, ">"}
+		logChan <- app.Log{Type: app.Print, Data: ">"}
 		cmd, err := reader.ReadString('\n')
 		if err != nil {
-			logChan <- Log{RecoverableErr, err}
+			logChan <- app.Log{Type: app.RecoverableErr, Data: err}
 			continue
 		}
 
@@ -78,7 +88,9 @@ func shell(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, log
 		case QUERY.Cmd:
 			processReq(cmdList, QUERY, reqChan, resChan, logChan)
 		default:
-			logChan <- Log{RecoverableErr, errors.New("command not supported")}
+			logChan <- app.Log{
+				Type: app.RecoverableErr,
+				Data: errors.New("command not supported")}
 			continue
 		}
 
