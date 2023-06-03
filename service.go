@@ -2,6 +2,9 @@ package main
 
 import (
 	"errors"
+	"peersdb/api"
+	"peersdb/app"
+	"peersdb/config"
 	"time"
 
 	orbitdb "berty.tech/go-orbit-db"
@@ -12,7 +15,11 @@ import (
 	"golang.org/x/net/context"
 )
 
-func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, logChan chan Log) {
+func service(peersDB *app.PeersDB,
+	reqChan chan api.Request,
+	resChan chan interface{},
+	logChan chan app.Log) {
+
 	coreAPI := (*peersDB.Orbit).IPFS()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -26,7 +33,7 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 	subipfs, err := (*peersDB.Node).PeerHost.EventBus().Subscribe(
 		new(event.EvtPeerConnectednessChanged))
 	if err != nil {
-		logChan <- Log{NonRecoverableErr, err}
+		logChan <- app.Log{Type: app.NonRecoverableErr, Data: err}
 		return
 	}
 
@@ -45,7 +52,7 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 				cidDbId := (*db).Address().String()
 				err := coreAPI.PubSub().Publish(ctx, peerId, []byte(cidDbId))
 				if err != nil {
-					logChan <- Log{RecoverableErr, err}
+					logChan <- app.Log{Type: app.RecoverableErr, Data: err}
 				}
 
 				continue
@@ -61,7 +68,7 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 	nodeId := peersDB.ID
 	sub, err := coreAPI.PubSub().Subscribe(ctx, nodeId)
 	if err != nil {
-		logChan <- Log{NonRecoverableErr, err}
+		logChan <- app.Log{Type: app.NonRecoverableErr, Data: err}
 		return
 	}
 
@@ -72,7 +79,7 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 			// received data should contain the id of the peers db
 			msg, err := sub.Next(context.Background())
 			if err != nil {
-				logChan <- Log{NonRecoverableErr, err}
+				logChan <- app.Log{Type: app.NonRecoverableErr, Data: err}
 				return
 			}
 
@@ -99,7 +106,7 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 
 				store, err := (*peersDB.Orbit).Open(ctx, addr, &dbopts)
 				if err != nil {
-					logChan <- Log{RecoverableErr, err}
+					logChan <- app.Log{Type: app.RecoverableErr, Data: err}
 				}
 
 				db := store.(iface.EventLogStore)
@@ -108,7 +115,7 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 
 				// persist store address
 				peersDB.Config.StoreAddr = addr
-				SaveConfig(peersDB.Config)
+				config.SaveConfig(peersDB.Config)
 			}
 		}
 	}()
@@ -121,13 +128,13 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 		var res interface{}
 
 		switch req.Method.Cmd {
-		case GET.Cmd:
+		case api.GET.Cmd:
 			res = "Not implemented"
-		case POST.Cmd:
+		case api.POST.Cmd:
 			db := peersDB.EventLogDB
 			if db == nil {
 				err = errors.New("you need a datastore first, try connecting to a peer")
-				logChan <- Log{RecoverableErr, err}
+				logChan <- app.Log{Type: app.RecoverableErr, Data: err}
 				break
 			}
 
@@ -136,7 +143,7 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 			path := req.Args[0]
 			filePath, err := AddToIPFSByPath(ctx, coreAPI, path)
 			if err != nil {
-				logChan <- Log{RecoverableErr, err}
+				logChan <- app.Log{Type: app.RecoverableErr, Data: err}
 				break
 			}
 
@@ -144,25 +151,25 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 			data := []byte(filePath.String())
 			_, err = (*db).Add(ctx, data)
 			if err != nil {
-				logChan <- Log{RecoverableErr, err}
+				logChan <- app.Log{Type: app.RecoverableErr, Data: err}
 			}
 
 			res = "File uploaded"
 
-		case CONNECT.Cmd:
+		case api.CONNECT.Cmd:
 			peerId := req.Args[0]
 			err = ConnectToPeers(ctx, peersDB, []string{peerId}, logChan)
 			if err != nil {
-				logChan <- Log{RecoverableErr, err}
+				logChan <- app.Log{Type: app.RecoverableErr, Data: err}
 			}
 			res = "Peer id processed"
 
 		// TODO : only works once ?!
-		case QUERY.Cmd:
+		case api.QUERY.Cmd:
 			db := peersDB.EventLogDB
 			if db == nil {
 				err = errors.New("you need a datastore first, try connecting to a peer")
-				logChan <- Log{RecoverableErr, err}
+				logChan <- app.Log{Type: app.RecoverableErr, Data: err}
 				break
 			}
 
@@ -172,7 +179,7 @@ func service(peersDB *PeersDB, reqChan chan Request, resChan chan interface{}, l
 			time.Sleep(time.Second * 5)
 			res, err = (*db).List(ctx, &orbitdb.StreamOptions{Amount: &infinity})
 			if err != nil {
-				logChan <- Log{RecoverableErr, err}
+				logChan <- app.Log{Type: app.RecoverableErr, Data: err}
 			}
 		}
 

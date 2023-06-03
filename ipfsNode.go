@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
+
+	peersdbConf "peersdb/config"
 
 	"github.com/ipfs/kubo/config"
 	"github.com/ipfs/kubo/core"
@@ -52,14 +53,14 @@ func exists(path string) (bool, error) {
 // "ipfs stores all its settings and internal data in a directory called the repository"
 // removal has to be taken care of by caller
 func createRepo(temporary bool) (string, error) {
-	repoPath := "./" + *flagRepo
+	repoPath := "./" + *peersdbConf.FlagRepo
 
 	var err error
 	if temporary {
-		repoPath, err = os.MkdirTemp("", *flagRepo)
+		repoPath, err = os.MkdirTemp("", *peersdbConf.FlagRepo)
 	} else if exists, _ := exists(repoPath); !exists {
 		perm := int(0777) // full permissions
-		err = os.Mkdir(*flagRepo, os.FileMode(perm))
+		err = os.Mkdir(*peersdbConf.FlagRepo, os.FileMode(perm))
 	}
 
 	if err != nil {
@@ -100,7 +101,7 @@ func createRepo(temporary bool) (string, error) {
 	// cfg.Identity =
 
 	// experimental features
-	if *flagExp {
+	if *peersdbConf.FlagExp {
 		// https://github.com/ipfs/kubo/blob/master/docs/experimental-features.md#ipfs-filestore
 		cfg.Experimental.FilestoreEnabled = true
 		// https://github.com/ipfs/kubo/blob/master/docs/experimental-features.md#ipfs-urlstore
@@ -116,8 +117,8 @@ func createRepo(temporary bool) (string, error) {
 	// Configure swarm addresses/where to listen
 	// TODO : make port configurable
 	cfg.Addresses.Swarm = []string{
-		"/ip4/127.0.0.1/tcp/" + *flagPort,
-		"/ip6/::1/tcp/" + *flagPort,
+		"/ip4/127.0.0.1/tcp/" + *peersdbConf.FlagPort,
+		"/ip6/::1/tcp/" + *peersdbConf.FlagPort,
 	}
 
 	// Create the repo with the config
