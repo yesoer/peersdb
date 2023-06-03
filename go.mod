@@ -1,4 +1,4 @@
-module orbit-sample
+module peersdb
 
 go 1.19
 
