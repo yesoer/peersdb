@@ -1,12 +1,12 @@
-package main
+package app
 
 import (
 	"context"
 	"fmt"
 	"os"
 	"path/filepath"
-	"peersdb/app"
 	"peersdb/config"
+	"peersdb/ipfs"
 
 	orbitdb "berty.tech/go-orbit-db"
 	"berty.tech/go-orbit-db/accesscontroller"
@@ -22,14 +22,14 @@ var orbit iface.OrbitDB
 // DEVNOTE : PeersDB.EventLogDB may be nil after init ! that is if it's not root
 // and has no transaction datastore locally. A datastore will be replicated on
 // the first established peer connection
-func initPeer(peersDB *app.PeersDB) error {
+func InitPeer(peersDB *PeersDB) error {
 
 	// start ipfs node
 	ctx := context.Background()
 
 	var err error
 
-	node, err := SpawnEphemeral(ctx)
+	node, err := ipfs.SpawnEphemeral(ctx)
 	if err != nil {
 		return err
 	}
