@@ -16,8 +16,8 @@ import (
 
 // Method defines simple schemas for actions to perform on the db
 type Method struct {
-	Cmd    string
-	ArgCnt int
+	Cmd    string `json:"cmd"`
+	ArgCnt int    `json:"argcnt"`
 }
 
 var (
@@ -31,8 +31,8 @@ var (
 // various apis (shell, http, grpc etc.) and the actual db service
 // (n to 1 relation at the moment)
 type Request struct {
-	Method Method
-	Args   []string
+	Method Method   `json:"method"`
+	Args   []string `json:"args"`
 }
 
 func Service(peersDB *PeersDB,
