@@ -1,4 +1,6 @@
-# peersdb
+# PeersDB
+<hr/>
+
 A distributed p2p database, based on orbitdb but extend with blockchain technology to provide data integrity. Intended for the sharing of datasets for model training
 
 ## Table of Contents
@@ -11,6 +13,8 @@ A distributed p2p database, based on orbitdb but extend with blockchain technolo
   - [Shell](#shell)
   - [HTTP](#http)
 
+# Get Started
+<hr/>
 
 ```shell
 go run main.go
@@ -32,6 +36,7 @@ There is also a persitent config file that you may use.
 | -root | makes this node a root node meaning it will create it's own datastore | false |
 
 # Contribution :
+<hr/>
 
 **Branch naming** should look like this
 `<type>/<name>`
@@ -78,6 +83,7 @@ As for the **commit body** there is no mandatory structure as of now.
 As a rule of thumb for **merging** make sure to rebase before doing so.
 
 # Architecture
+<hr/>
 
 ## Replication
 
