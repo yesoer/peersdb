@@ -117,8 +117,8 @@ func createRepo(temporary bool) (string, error) {
 	// Configure swarm addresses/where to listen
 	// TODO : make port configurable
 	cfg.Addresses.Swarm = []string{
-		"/ip4/127.0.0.1/tcp/" + *peersdbConf.FlagPort,
-		"/ip6/::1/tcp/" + *peersdbConf.FlagPort,
+		"/ip4/127.0.0.1/tcp/" + *peersdbConf.FlagIPFSPort,
+		"/ip6/::1/tcp/" + *peersdbConf.FlagIPFSPort,
 	}
 
 	// Create the repo with the config
