@@ -8,15 +8,19 @@ go run main.go
 ```
 
 ## Flags
+You may use the following flags to configure your peersdb instance.
+There is also a persitent config file that you may use.
 
 | Flag           | Description | Default |
 |----------------|-------------|---------|
-| -experimental  | enables kubo experimental features | true |
-| -devlogs | enables development level logging | false |
-| -port | sets the application port | 4001 |
 | -shell | enables the shell interface | false |
-| -root | makes this node a root node meaning it will create it's own datastore | false |
+| -http | enables the http interface | false |
+| -ipfs-port | sets the ipfs port | 4001 |
+| -http-port | sets the http port | 8080 |
+| -experimental  | enables kubo experimental features | true |
 | -repo | configure the repo/directory name for the ipfs node | peersdb |
+| -devlogs | enables development level logging | false |
+| -root | makes this node a root node meaning it will create it's own datastore | false |
 
 # Contribution :
 
