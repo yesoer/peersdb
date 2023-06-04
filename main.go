@@ -81,7 +81,7 @@ func main() {
 
 	// start the shell interface
 	if *config.FlagShell {
-		go api.Shell(&peersDB, reqChan, resChan, logChan)
+		go api.Shell(reqChan, resChan, logChan)
 	}
 
 	// start the http interface

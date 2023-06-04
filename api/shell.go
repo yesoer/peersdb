@@ -35,8 +35,7 @@ func processReq(cmdList []string, method app.Method,
 }
 
 // start listening for commands, implements the api for the user
-func Shell(peersDB *app.PeersDB,
-	reqChan chan app.Request,
+func Shell(reqChan chan app.Request,
 	resChan chan interface{},
 	logChan chan app.Log) {
 
