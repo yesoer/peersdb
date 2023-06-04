@@ -1,7 +1,16 @@
 # peersdb
 A distributed p2p database, based on orbitdb but extend with blockchain technology to provide data integrity. Intended for the sharing of datasets for model training
 
-# Usage
+## Table of Contents
+- [Get Started](#get-started)
+  - [Flags](#flags)
+- [Contribution](#contribution)
+- [Architecture](#architecture)
+  - [Replication](#replication)
+- [APIs](#apis)
+  - [Shell](#shell)
+  - [HTTP](#http)
+
 
 ```shell
 go run main.go
