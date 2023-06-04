@@ -73,3 +73,72 @@ A new peersdb instance could be a root instance. The root instance creates a
 when it's connected to root it will replicate said store. From now on they 
 will replicate via events. If a node restarts they will try to load the datastore
 from disk.
+
+# APIs
+<hr/>
+
+## Shell
+
+Shell commands look like this :
+`<command> <arg1> <arg2> ...`
+
+### connect 
+
+**Description :**
+Manually connect to other peers .
+
+**Args :**
+
+| Description                   | Example | 
+|-------------------------------|------------------------------------------------------------------------------|
+| The path of another ipfs node | `/ip4/127.0.0.1/tcp/4001/p2p/QmRQSrmFNEWx7qKF5jrdLJ4oS8dZzYpTKDoAKoDzL3zXr7` |
+
+**Returns :**
+A status string.
+
+### post
+
+**Description :**
+Adds a file to the local ipfs node and stores the contribution block in the eventlog
+
+**Args :**
+
+| Description  |   Example | 
+|--------------|-----------|
+| the filepath | ./main.go |
+
+**Returns :**
+A status string.
+
+### query
+
+**Description :**
+Queries the eventlog for all entries
+
+**Args :**
+
+-
+
+**Returns :**
+A results list.
+
+## HTTP
+
+### POST  /peersdb/command
+
+Execute a command.
+
+**Body :**
+```
+{
+  method: {
+    argcnt: int
+    cmd: string
+  }
+  args: [
+    string
+  ]
+}
+```
+
+cmd identifies the same commands as described under [Shell](#shell). They also receive the same arguments.
