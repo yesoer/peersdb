@@ -86,7 +86,7 @@ func main() {
 
 	// start the http interface
 	if *config.FlagHTTP {
-		go api.ServeHTTP()
+		go api.ServeHTTP(reqChan, resChan)
 	}
 
 	// await termination context
