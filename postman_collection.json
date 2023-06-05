@@ -1,0 +1,106 @@
+{
+	"info": {
+		"_postman_id": "6a029004-f4fe-4a9f-8644-ca8f728d4fc3",
+		"name": "PeersDB",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "16605481"
+	},
+	"item": [
+		{
+			"name": "Connect to peer",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"method\": {\n    \"argcnt\": 1,\n    \"cmd\": \"connect\"\n  },\n  \"args\": [\n    \"/ip4/127.0.0.1/tcp/4001/p2p/QmPQ8Q9z5KeMLYxksTFUKDGy3p9Pk7QM9p65f7k44EuWuJ\"\n  ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8080/peersdb/command",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8080",
+					"path": [
+						"peersdb",
+						"command"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Post by file path",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"method\": {\n    \"argcnt\": 1,\n    \"cmd\": \"post\"\n  },\n  \"args\": [\n    \"./main.go\"\n  ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8080/peersdb/command",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8080",
+					"path": [
+						"peersdb",
+						"command"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Query for all",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"method\": {\n    \"argcnt\": 0,\n    \"cmd\": \"query\"\n  },\n  \"args\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8080/peersdb/command",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8080",
+					"path": [
+						"peersdb",
+						"command"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
