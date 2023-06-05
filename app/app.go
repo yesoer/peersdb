@@ -14,8 +14,6 @@ import (
 //
 // represents the application across go routines
 type PeersDB struct {
-	ID string // node identifier TODO : can probably get it from LogDB somehow
-
 	// data storage
 	Node       *core.IpfsNode         // TODO : only because of node.PeerHost.EventBus
 	EventLogDB *orbitdb.EventLogStore // the log which holds all transactions

@@ -27,12 +27,19 @@ func InitPeer(peersDB *PeersDB) error {
 	// start ipfs node
 	ctx := context.Background()
 
-	var err error
+	// load persistent config
+	conf, err := config.LoadConfig()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Couldn't load config : %+v\n", err)
+	}
 
+	// start ipfs node
 	node, err := ipfs.SpawnEphemeral(ctx)
 	if err != nil {
 		return err
 	}
+	conf.PeerID = node.Identity.String()
+	peersDB.Node = node
 
 	coreAPI, err := coreapi.NewCoreAPI(node)
 	if err != nil {
@@ -48,19 +55,26 @@ func InitPeer(peersDB *PeersDB) error {
 		}
 	}
 
-	// create db
+	// set cache dir
 	cacheDir := filepath.Join(os.Getenv("HOME"), ".cache")
 	cache := filepath.Join(cacheDir, "peersdb", *config.FlagRepo, "transactions-store")
-	orbit, err = orbitdb.NewOrbitDB(
-		ctx,
-		coreAPI,
-		&orbitdb.NewOrbitDBOptions{
-			Logger:    devLog,
-			Directory: &cache,
-		})
+
+	// set orbitdb create options
+	orbitopts := &orbitdb.NewOrbitDBOptions{
+		Logger:    devLog,
+		Directory: &cache,
+	}
+	if conf.PeerID != "" {
+		// TODO : if this does not work store and set Identitiy as non-string
+		orbitopts.ID = &conf.PeerID
+	}
+
+	// start orbitdb instance
+	orbit, err = orbitdb.NewOrbitDB(ctx, coreAPI, orbitopts)
 	if err != nil {
 		return err
 	}
+	peersDB.Orbit = &orbit
 
 	// give write access to all
 	ac := &accesscontroller.CreateAccessControllerOptions{
@@ -80,11 +94,6 @@ func InitPeer(peersDB *PeersDB) error {
 	}
 
 	// see if there is a persisted store available
-	conf, err := config.LoadConfig()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Couldn't load config : %+v\n", err)
-	}
-
 	store, err := orbit.Open(ctx, conf.StoreAddr, &dbopts)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\nTry resolving it by connecting to a peer\n", err)
@@ -95,13 +104,10 @@ func InitPeer(peersDB *PeersDB) error {
 
 		// persist store address
 		conf.StoreAddr = db.Address().String()
-		config.SaveConfig(conf)
 	}
 
 	peersDB.Config = conf
-	peersDB.ID = node.Identity.String()
-	peersDB.Node = node
-	peersDB.Orbit = &orbit
+	config.SaveConfig(peersDB.Config)
 
 	return nil
 }

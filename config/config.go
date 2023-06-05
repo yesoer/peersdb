@@ -8,6 +8,7 @@ import (
 
 type Config struct {
 	StoreAddr string `json:"storeAddr"`
+	PeerID    string `json:"peerID"`
 }
 
 // TODO : store config and cache in appropriate directories
@@ -22,6 +23,7 @@ func LoadConfig() (*Config, error) {
 			// default config in case none was found
 			config := &Config{
 				StoreAddr: "transactions",
+				PeerID:    "",
 			}
 			return config, nil
 		}
