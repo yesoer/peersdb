@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"errors"
 	"peersdb/config"
 	"peersdb/ipfs"
@@ -9,7 +10,6 @@ import (
 	orbitdb "berty.tech/go-orbit-db"
 	"berty.tech/go-orbit-db/accesscontroller"
 	"berty.tech/go-orbit-db/iface"
-	"berty.tech/go-orbit-db/stores/operation"
 	"github.com/libp2p/go-libp2p/core/event"
 	"github.com/libp2p/go-libp2p/core/network"
 	"golang.org/x/net/context"
@@ -167,6 +167,11 @@ func awaitStoreExchange(peersDB *PeersDB, logChan chan Log) {
 	}
 }
 
+type Contribution struct {
+	Path        string `json:"path"`        // ipfs file path which includes the cid
+	Contributor string `json:"contributor"` // ipfs node id
+}
+
 // executes post command
 func post(peersDB *PeersDB, path string, logChan chan Log) interface{} {
 	db := peersDB.EventLogDB
@@ -186,9 +191,17 @@ func post(peersDB *PeersDB, path string, logChan chan Log) interface{} {
 		return err
 	}
 
-	// add the reference to the file (stored in ipfs) to orbitdb
-	data := []byte(filePath.String())
-	_, err = (*db).Add(ctx, data)
+	// create the contribution block
+	ipfsPath := filePath.String()
+	data := Contribution{ipfsPath, peersDB.Config.PeerID}
+	dataJSON, err := json.Marshal(data)
+	if err != nil {
+		logChan <- Log{Type: RecoverableErr, Data: err}
+		return err
+	}
+
+	// add the contribution block
+	_, err = (*db).Add(ctx, dataJSON)
 	if err != nil {
 		logChan <- Log{Type: RecoverableErr, Data: err}
 		return err
@@ -208,7 +221,7 @@ func connect(peersDB *PeersDB, peerId string, logChan chan Log) string {
 }
 
 // executes query command
-func query(peersDB *PeersDB, logChan chan Log) []operation.Operation {
+func query(peersDB *PeersDB, logChan chan Log) []Contribution {
 	db := peersDB.EventLogDB
 	if db == nil {
 		err := errors.New("you need a datastore first, try connecting to a peer")
@@ -216,6 +229,7 @@ func query(peersDB *PeersDB, logChan chan Log) []operation.Operation {
 		return nil
 	}
 
+	// fetch data from network
 	infinity := -1
 	ctx := context.Background()
 	(*db).Load(ctx, infinity)
@@ -223,10 +237,19 @@ func query(peersDB *PeersDB, logChan chan Log) []operation.Operation {
 	// TODO : await replication/ready event
 	time.Sleep(time.Second * 5)
 
+	// get all entries and parse them
 	res, err := (*db).List(ctx, &orbitdb.StreamOptions{Amount: &infinity})
 	if err != nil {
 		logChan <- Log{Type: RecoverableErr, Data: err}
 	}
 
-	return res
+	jsonRes := make([]Contribution, len(res))
+	for i, op := range res {
+		err := json.Unmarshal(op.GetValue(), &jsonRes[i])
+		if err != nil {
+			logChan <- Log{Type: RecoverableErr, Data: err}
+		}
+	}
+
+	return jsonRes
 }
