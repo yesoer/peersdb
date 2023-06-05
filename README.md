@@ -20,7 +20,6 @@ go run main.go
 
 ## Flags
 You may use the following flags to configure your peersdb instance.
-There is also a persitent config file that you may use.
 
 | Flag           | Description | Default |
 |----------------|-------------|---------|
@@ -32,6 +31,9 @@ There is also a persitent config file that you may use.
 | -repo | configure the repo/directory name for the ipfs node | peersdb |
 | -devlogs | enables development level logging | false |
 | -root | makes this node a root node meaning it will create it's own datastore | false |
+
+There is also a persitent config file but you probably don't want to change 
+anything in there.
 
 # Contribution :
 
