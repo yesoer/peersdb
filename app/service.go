@@ -113,7 +113,7 @@ func awaitConnected(peersDB *PeersDB, logChan chan Log) {
 // on connectedness changed events, peers exchange their event logs
 func awaitStoreExchange(peersDB *PeersDB, logChan chan Log) {
 	// subscribe to own topic
-	nodeId := peersDB.ID
+	nodeId := peersDB.Config.PeerID
 	coreAPI := (*peersDB.Orbit).IPFS()
 	ctx := context.Background()
 	sub, err := coreAPI.PubSub().Subscribe(ctx, nodeId)
