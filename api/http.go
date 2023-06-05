@@ -46,11 +46,17 @@ func ServeHTTP(reqChan chan app.Request, resChan chan interface{}) {
 	mw := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
+			w.Header().Set("Access-Control-Allow-Methods", "POST")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 			if r.Method == "OPTIONS" {
 				w.WriteHeader(http.StatusOK)
+				return
+			}
+
+			// only accepting post requests
+			if r.Method != "POST" {
+				w.WriteHeader(http.StatusMethodNotAllowed)
 				return
 			}
 
