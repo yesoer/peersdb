@@ -7,8 +7,9 @@ import (
 )
 
 type Config struct {
-	StoreAddr string `json:"storeAddr"`
-	PeerID    string `json:"peerID"`
+	ContributionsStoreAddr string `json:"contributionsStoreAddr"`
+	ValidationsStoreAddr   string `json:"validationsStoreAddr"`
+	PeerID                 string `json:"peerID"`
 }
 
 // TODO : store config and cache in appropriate directories
@@ -22,8 +23,9 @@ func LoadConfig() (*Config, error) {
 		if os.IsNotExist(err) {
 			// default config in case none was found
 			config := &Config{
-				StoreAddr: "transactions",
-				PeerID:    "",
+				ContributionsStoreAddr: "contributions",
+				ValidationsStoreAddr:   "validations",
+				PeerID:                 "",
 			}
 			return config, nil
 		}

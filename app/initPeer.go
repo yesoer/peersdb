@@ -11,6 +11,7 @@ import (
 	orbitdb "berty.tech/go-orbit-db"
 	"berty.tech/go-orbit-db/accesscontroller"
 	"berty.tech/go-orbit-db/iface"
+	"berty.tech/go-orbit-db/stores/documentstore"
 	"github.com/ipfs/kubo/core/coreapi"
 	"go.uber.org/zap"
 )
@@ -94,16 +95,39 @@ func InitPeer(peersDB *PeersDB) error {
 	}
 
 	// see if there is a persisted store available
-	store, err := orbit.Open(ctx, conf.StoreAddr, &dbopts)
+	store, err := orbit.Open(ctx, conf.ContributionsStoreAddr, &dbopts)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\nTry resolving it by connecting to a peer\n", err)
 	} else {
 		db := store.(iface.EventLogStore)
 		db.Load(ctx, -1)
-		peersDB.EventLogDB = &db
+		peersDB.Contributions = &db
 
 		// persist store address
-		conf.StoreAddr = db.Address().String()
+		conf.ContributionsStoreAddr = db.Address().String()
+	}
+
+	// a creatable docsstore which no other peer can write to
+	storeType = "docstore"
+	create := true
+	docstoreOpt := documentstore.DefaultStoreOptsForMap("Path")
+	dbopts = orbitdb.CreateDBOptions{
+		Create:            &create,
+		StoreType:         &storeType,
+		StoreSpecificOpts: docstoreOpt,
+	}
+
+	// see if there is a persisted store available
+	store, err = orbit.Open(ctx, conf.ValidationsStoreAddr, &dbopts)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\nTry resolving it by connecting to a peer\n", err)
+	} else {
+		db := store.(iface.DocumentStore)
+		db.Load(ctx, -1)
+		peersDB.Validations = &db
+
+		// persist store address
+		conf.ValidationsStoreAddr = db.Address().String()
 	}
 
 	peersDB.Config = conf
