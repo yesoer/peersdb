@@ -3,13 +3,18 @@ package app
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"peersdb/config"
 	"peersdb/ipfs"
+	"strings"
 	"time"
 
 	orbitdb "berty.tech/go-orbit-db"
 	"berty.tech/go-orbit-db/accesscontroller"
 	"berty.tech/go-orbit-db/iface"
+	"berty.tech/go-orbit-db/stores"
+	files "github.com/ipfs/go-ipfs-files"
+	"github.com/ipfs/interface-go-ipfs-core/path"
 	"github.com/libp2p/go-libp2p/core/event"
 	"github.com/libp2p/go-libp2p/core/network"
 	"golang.org/x/net/context"
@@ -41,12 +46,15 @@ func Service(peersDB *PeersDB,
 	resChan chan interface{},
 	logChan chan Log) {
 
-	// wait and handle connectedness changed event
+	// wait for and handle connectedness changed event
 	go awaitConnected(peersDB, logChan)
 
 	// wait for pubsub messages to self which will be received when another peer
 	// connects (see "awaitConnected" above)
 	go awaitStoreExchange(peersDB, logChan)
+
+	// wait for write events to handle validation
+	go awaitWriteEvent(peersDB, logChan)
 
 	//--------------------------------------------------------------------------
 	// handle API requests
@@ -165,6 +173,107 @@ func awaitStoreExchange(peersDB *PeersDB, logChan chan Log) {
 			config.SaveConfig(peersDB.Config)
 		}
 	}
+}
+
+type opDoc struct {
+	Key   string `json:"key,omitempty"`
+	Value []byte `json:"value,omitempty"`
+}
+
+func extractCIDFromIPFSPath(ipfsPath string) (string, error) {
+	// Remove the "/ipfs/" prefix from the IPFS path
+	cidStartIndex := strings.Index(ipfsPath, "/ipfs/") + 6
+	if cidStartIndex < 6 || cidStartIndex >= len(ipfsPath) {
+		return "", fmt.Errorf("invalid IPFS path")
+	}
+
+	cid := ipfsPath[cidStartIndex:]
+	return cid, nil
+}
+
+func awaitWriteEvent(peersDB *PeersDB, logChan chan Log) {
+	// since contributions datastore may be nil, wait till it isn't
+	for peersDB.Contributions == nil {
+		time.Sleep(time.Second)
+	}
+
+	// subscribe to write event
+	contributions := *peersDB.Contributions
+	subdb, err := contributions.EventBus().Subscribe([]interface{}{
+		new(stores.EventWrite),
+	})
+	if err != nil {
+		logChan <- Log{RecoverableErr, err}
+		return
+	}
+
+	coreAPI := (*peersDB.Orbit).IPFS()
+	ctx := context.Background()
+
+	validations := *peersDB.Validations
+
+	subChan := subdb.Out()
+	for {
+		// get the new entry
+		e := <-subChan
+		we := e.(stores.EventWrite)
+
+		// check if the write was executed on the contributions db
+		if we.Address.GetPath() != contributions.Address().GetPath() {
+			continue
+		}
+
+		entry := we.Entry
+
+		// get the ipfs-log operation from the entry
+		opStr := entry.GetPayload()
+		var op opDoc
+		err := json.Unmarshal(opStr, &op)
+		if err != nil {
+			logChan <- Log{RecoverableErr, err}
+			continue
+		}
+
+		// get the ipfs file path the from the contribution block
+		var contribution Contribution
+		err = json.Unmarshal(op.Value, &contribution)
+		if err != nil {
+			logChan <- Log{RecoverableErr, err}
+			continue
+		}
+		pth := contribution.Path
+
+		// get the file from ipfs
+		parsedPth := path.New(pth)
+		file, err := coreAPI.Unixfs().Get(ctx, parsedPth)
+		if err != nil {
+			logChan <- Log{RecoverableErr, err}
+			continue
+		}
+
+		// try to validate the file
+		valid, err := validateStub(file)
+		if err != nil {
+			logChan <- Log{RecoverableErr, err}
+			continue
+		}
+
+		// store validation info
+		valdoc := map[string]interface{}{
+			"Path":    pth,
+			"IsValid": valid,
+		}
+		_, err = validations.Put(ctx, valdoc)
+		if err != nil {
+			logChan <- Log{RecoverableErr, err}
+			continue
+		}
+	}
+}
+
+// TODO : implement validation
+func validateStub(file files.Node) (bool, error) {
+	return true, nil
 }
 
 type Contribution struct {
