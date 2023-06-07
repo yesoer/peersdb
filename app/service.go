@@ -87,7 +87,7 @@ func awaitConnected(peersDB *PeersDB, logChan chan Log) {
 		return
 	}
 
-	db := peersDB.EventLogDB
+	db := peersDB.Contributions
 	coreAPI := (*peersDB.Orbit).IPFS()
 
 	for e := range subipfs.Out() {
@@ -131,7 +131,7 @@ func awaitStoreExchange(peersDB *PeersDB, logChan chan Log) {
 		}
 
 		// in case we started without any db, replicate this one
-		if peersDB.EventLogDB == nil {
+		if peersDB.Contributions == nil {
 			addr := string(msg.Data())
 			create := false
 			storeType := "eventlog"
@@ -158,10 +158,10 @@ func awaitStoreExchange(peersDB *PeersDB, logChan chan Log) {
 
 			db := store.(iface.EventLogStore)
 			db.Load(ctx, -1)
-			peersDB.EventLogDB = &db
+			peersDB.Contributions = &db
 
 			// persist store address
-			peersDB.Config.StoreAddr = addr
+			peersDB.Config.ContributionsStoreAddr = addr
 			config.SaveConfig(peersDB.Config)
 		}
 	}
@@ -174,7 +174,7 @@ type Contribution struct {
 
 // executes post command
 func post(peersDB *PeersDB, path string, logChan chan Log) interface{} {
-	db := peersDB.EventLogDB
+	db := peersDB.Contributions
 	if db == nil {
 		err := errors.New("you need a datastore first, try connecting to a peer")
 		logChan <- Log{Type: RecoverableErr, Data: err}
@@ -222,7 +222,7 @@ func connect(peersDB *PeersDB, peerId string, logChan chan Log) string {
 
 // executes query command
 func query(peersDB *PeersDB, logChan chan Log) []Contribution {
-	db := peersDB.EventLogDB
+	db := peersDB.Contributions
 	if db == nil {
 		err := errors.New("you need a datastore first, try connecting to a peer")
 		logChan <- Log{Type: RecoverableErr, Data: err}

@@ -15,9 +15,10 @@ import (
 // represents the application across go routines
 type PeersDB struct {
 	// data storage
-	Node       *core.IpfsNode         // TODO : only because of node.PeerHost.EventBus
-	EventLogDB *orbitdb.EventLogStore // the log which holds all transactions
-	Orbit      *iface.OrbitDB
+	Node          *core.IpfsNode         // TODO : only because of node.PeerHost.EventBus
+	Contributions *orbitdb.EventLogStore // the log which holds all contributions
+	Validations   *orbitdb.DocumentStore // the store which holds all validations
+	Orbit         *iface.OrbitDB
 
 	// mutex to control access to the eventlog db across go routines
 	// TODO : use
