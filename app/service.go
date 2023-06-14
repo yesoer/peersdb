@@ -56,6 +56,9 @@ func Service(peersDB *PeersDB,
 	// wait for write events to handle validation
 	go awaitWriteEvent(peersDB, logChan)
 
+	// TODO : wait for and handle "validation" requests
+	go awaitValidationReq(peersDB, logChan)
+
 	//--------------------------------------------------------------------------
 	// handle API requests
 
@@ -368,4 +371,64 @@ type Validation struct {
 	Path    string `json:"path"` // ipfs path for a file, looks like this : /ipfs/<file cid>
 	IsValid bool   `json:"isValid"`
 	VoteCnt uint32 `json:"voteCnt"` // how many peers have contributed a vote, 0 if it was self determined
+}
+// waits for validation requests
+func awaitValidationReq(peersDB *PeersDB, logChan chan Log) {
+	// receive validation requests via pubsub
+	coreAPI := (*peersDB.Orbit).IPFS()
+	ctx := context.Background()
+	resSub, err := coreAPI.PubSub().Subscribe(ctx, validationReqTopic)
+	if err != nil {
+		// TODO : is it correct to flag this as recoverable ?
+		logChan <- Log{RecoverableErr, err}
+	}
+
+	for {
+		msg, err := resSub.Next(ctx)
+		if err != nil {
+			logChan <- Log{RecoverableErr, err}
+			continue
+		}
+
+		var validationReq ValidationReq
+		err = json.Unmarshal(msg.Data(), &validationReq)
+		if err != nil {
+			logChan <- Log{RecoverableErr, err}
+			continue
+		}
+
+		// from the validation store get the corresponding entry, if any
+		validations := *peersDB.Validations
+		res, err := validations.Get(ctx, validationReq.Path, &iface.DocumentStoreGetOptions{})
+		if err != nil {
+			logChan <- Log{RecoverableErr, err}
+			continue
+		}
+
+		// no internal vote
+		// TODO : should be reason to listen to the voting topic aswell right ?
+		if len(res) < 1 {
+			continue
+		}
+
+		// only respond if the vote comes from self
+		e := res[0].(Validation)
+		if e.VoteCnt != 0 {
+			continue
+		}
+
+		validationRes := ValidationRes{e.IsValid}
+		resTopic := validationReq.PeerID + validationReq.Path
+		resData, err := json.Marshal(validationRes)
+		if err != nil {
+			logChan <- Log{RecoverableErr, err}
+			continue
+		}
+
+		err = coreAPI.PubSub().Publish(ctx, resTopic, resData)
+		if err != nil {
+			logChan <- Log{RecoverableErr, err}
+			continue
+		}
+	}
 }
