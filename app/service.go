@@ -260,8 +260,9 @@ func awaitWriteEvent(peersDB *PeersDB, logChan chan Log) {
 
 		// store validation info
 		valdoc := map[string]interface{}{
-			"Path":    pth,
-			"IsValid": valid,
+			"path":    pth,
+			"isValid": valid,
+			"voteCnt": 0,
 		}
 		_, err = validations.Put(ctx, valdoc)
 		if err != nil {
@@ -361,4 +362,10 @@ func query(peersDB *PeersDB, logChan chan Log) []Contribution {
 	}
 
 	return jsonRes
+}
+
+type Validation struct {
+	Path    string `json:"path"` // ipfs path for a file, looks like this : /ipfs/<file cid>
+	IsValid bool   `json:"isValid"`
+	VoteCnt uint32 `json:"voteCnt"` // how many peers have contributed a vote, 0 if it was self determined
 }
