@@ -375,7 +375,8 @@ type Validation struct {
 	VoteCnt uint32 `json:"voteCnt"` // how many peers have contributed a vote, 0 if it was self determined
 }
 
-// checks if the file identified by the ipfs path has been validated
+// checks if the file identified by the ipfs path is valid according to local
+// entries or peers
 func isValid(peersDB *PeersDB, path string) (bool, error) {
 	// TODO : check local entry
 	validations := *peersDB.Validations
@@ -397,10 +398,25 @@ func isValid(peersDB *PeersDB, path string) (bool, error) {
 
 	// TODO : no local entry, so fetch votes via pubsub and accumulate them
 	validation, err := accValidations(peersDB, path)
+	if err != nil {
+		return false, err
+	}
 
 	// TODO : if too little response, self validate
 
-	return true, nil
+	// persist result
+	valdoc := map[string]interface{}{
+		"path":    validation.Path,
+		"isValid": validation.IsValid,
+		"voteCnt": validation.VoteCnt,
+	}
+	_, err = validations.Put(ctx, valdoc)
+	if err != nil {
+		isValid := valdoc["isValid"].(bool)
+		return isValid, err
+	}
+
+	return validation.IsValid, nil
 }
 
 type ValidationReq struct {
