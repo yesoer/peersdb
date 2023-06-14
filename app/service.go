@@ -313,6 +313,8 @@ func post(peersDB *PeersDB, path string, logChan chan Log) interface{} {
 		return err
 	}
 
+	// TODO : check if it already exists/the data has been added already
+
 	// add the contribution block
 	_, err = (*db).Add(ctx, dataJSON)
 	if err != nil {
@@ -372,6 +374,122 @@ type Validation struct {
 	IsValid bool   `json:"isValid"`
 	VoteCnt uint32 `json:"voteCnt"` // how many peers have contributed a vote, 0 if it was self determined
 }
+
+// checks if the file identified by the ipfs path has been validated
+func isValid(peersDB *PeersDB, path string) (bool, error) {
+	// TODO : check local entry
+	validations := *peersDB.Validations
+	getopts := iface.DocumentStoreGetOptions{
+		CaseInsensitive: false,
+		PartialMatches:  false,
+	}
+	ctx := context.Background()
+	local, err := validations.Get(ctx, path, &getopts)
+	if err != nil {
+		return false, err
+	}
+
+	// found a local entry
+	if len(local) >= 1 {
+		validation := local[0].(Validation)
+		return validation.IsValid, nil
+	}
+
+	// TODO : no local entry, so fetch votes via pubsub and accumulate them
+	validation, err := accValidations(peersDB, path)
+
+	// TODO : if too little response, self validate
+
+	return true, nil
+}
+
+type ValidationReq struct {
+	Path   string `json:"path"`
+	PeerID string `json:"peerId"`
+}
+type ValidationRes struct {
+	Vote bool `json:"vote"`
+}
+
+const validationReqTopic = "validation"
+
+// requests and accumulates votes via pubsub
+// returns a probability between 0 and 1 for validity of data
+func accValidations(peersDB *PeersDB, path string) (Validation, error) {
+	// receive votes via topic : this nodes id + the files path
+	coreAPI := (*peersDB.Orbit).IPFS()
+	nodeId := (*peersDB.Config).PeerID
+	ctx := context.Background()
+	resSub, err := coreAPI.PubSub().Subscribe(ctx, nodeId+path)
+	if err != nil {
+		return Validation{}, err
+	}
+
+	// announce their wish via topic : "validation" with message data : their id + the files cid
+	req := ValidationReq{path, nodeId}
+	reqData, err := json.Marshal(req)
+	if err != nil {
+		return Validation{}, err
+	}
+
+	err = coreAPI.PubSub().Publish(ctx, validationReqTopic, reqData)
+	if err != nil {
+		return Validation{}, err
+	}
+
+	// wait 5 seconds to accumulate votes
+	timeout := 5 * time.Second
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	validCnt := 0
+	inValidCnt := 0
+	ret := false
+	for {
+		select {
+		case <-ctx.Done():
+			// the deadline has been reached or the context was canceled
+			ret = true
+		default:
+			msg, err := resSub.Next(ctx)
+			if err != nil {
+				// TODO : log error
+				continue
+			}
+
+			// accumulate votes
+			var res ValidationRes
+			err = json.Unmarshal(msg.Data(), &res)
+			if err != nil {
+				// TODO : log error
+				continue
+			}
+
+			if res.Vote {
+				validCnt++
+				continue
+			}
+
+			inValidCnt++
+		}
+
+		if ret {
+			break
+		}
+	}
+
+	totalVotes := validCnt + inValidCnt
+	validation := Validation{path, false, uint32(totalVotes)}
+
+	// if more than half have voted for valid, the data is considered valid
+	isValid := float64(validCnt) / float64(totalVotes)
+	if isValid > .5 {
+		validation.IsValid = true
+	}
+
+	return validation, nil
+}
+
 // waits for validation requests
 func awaitValidationReq(peersDB *PeersDB, logChan chan Log) {
 	// receive validation requests via pubsub
