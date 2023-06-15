@@ -547,7 +547,8 @@ func awaitValidationReq(peersDB *PeersDB, logChan chan Log) {
 		}
 
 		// only respond if the vote comes from self
-		e := res[0].(Validation)
+		valdoc := res[0].(map[string]interface{})
+		e := validationMapToStruct(valdoc)
 		if e.VoteCnt != 0 {
 			continue
 		}
@@ -565,5 +566,20 @@ func awaitValidationReq(peersDB *PeersDB, logChan chan Log) {
 			logChan <- Log{RecoverableErr, err}
 			continue
 		}
+	}
+}
+
+// creates a validation struct from a map as returned from the validations
+// docstore
+func validationMapToStruct(m map[string]interface{}) Validation {
+	pth := m["path"].(string)
+	isValid := m["isValid"].(bool)
+	voteCntF := m["voteCnt"].(float64)
+	voteCntU := uint32(voteCntF)
+
+	return Validation{
+		Path:    pth,
+		IsValid: isValid,
+		VoteCnt: voteCntU,
 	}
 }
