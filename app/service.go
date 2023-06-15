@@ -392,8 +392,9 @@ func isValid(peersDB *PeersDB, path string) (bool, error) {
 
 	// found a local entry
 	if len(local) >= 1 {
-		validation := local[0].(Validation)
-		return validation.IsValid, nil
+		valdoc := local[0].(map[string]interface{})
+		isValid := valdoc["isValid"].(bool)
+		return isValid, nil
 	}
 
 	// TODO : no local entry, so fetch votes via pubsub and accumulate them
