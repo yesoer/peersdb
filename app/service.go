@@ -41,6 +41,7 @@ type Request struct {
 	Args   []string `json:"args"`
 }
 
+// starts all reoccuring tasks on peersdb level
 func Service(peersDB *PeersDB,
 	reqChan chan Request,
 	resChan chan interface{},
@@ -267,6 +268,10 @@ func awaitWriteEvent(peersDB *PeersDB, logChan chan Log) {
 			"isValid": valid,
 			"voteCnt": 0,
 		}
+
+		logChan <- Log{Info, fmt.Sprintf("validated %s with result %t",
+			valdoc["path"], valdoc["isValid"])}
+
 		_, err = validations.Put(ctx, valdoc)
 		if err != nil {
 			logChan <- Log{RecoverableErr, err}
@@ -397,13 +402,13 @@ func isValid(peersDB *PeersDB, path string) (bool, error) {
 		return isValid, nil
 	}
 
-	// TODO : no local entry, so fetch votes via pubsub and accumulate them
+	// no local entry, so fetch votes via pubsub and accumulate them
 	validation, err := accValidations(peersDB, path)
 	if err != nil {
 		return false, err
 	}
 
-	// TODO : if too little response, self validate
+	// TODO : if too little response (check validation.VoteCnt), self validate
 
 	// persist result
 	valdoc := map[string]interface{}{
