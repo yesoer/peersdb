@@ -110,7 +110,7 @@ func InitPeer(peersDB *PeersDB) error {
 	// a creatable docsstore which no other peer can write to
 	storeType = "docstore"
 	create := true
-	docstoreOpt := documentstore.DefaultStoreOptsForMap("Path")
+	docstoreOpt := documentstore.DefaultStoreOptsForMap("path")
 	dbopts = orbitdb.CreateDBOptions{
 		Create:            &create,
 		StoreType:         &storeType,
