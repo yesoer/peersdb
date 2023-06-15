@@ -210,6 +210,7 @@ func awaitWriteEvent(peersDB *PeersDB, logChan chan Log) {
 		logChan <- Log{RecoverableErr, err}
 		return
 	}
+	defer subdb.Close()
 
 	coreAPI := (*peersDB.Orbit).IPFS()
 	ctx := context.Background()
@@ -354,18 +355,24 @@ func query(peersDB *PeersDB, logChan chan Log) []Contribution {
 	ctx := context.Background()
 	(*db).Load(ctx, infinity)
 
-	// TODO : await replication/ready event
+	// TODO : await ready event
 	time.Sleep(time.Second * 5)
 
 	// get all entries and parse them
 	res, err := (*db).List(ctx, &orbitdb.StreamOptions{Amount: &infinity})
 	if err != nil {
 		logChan <- Log{Type: RecoverableErr, Data: err}
+		return []Contribution{}
 	}
 
 	jsonRes := make([]Contribution, len(res))
 	for i, op := range res {
 		err := json.Unmarshal(op.GetValue(), &jsonRes[i])
+		if err != nil {
+			logChan <- Log{Type: RecoverableErr, Data: err}
+			continue
+		}
+
 		if err != nil {
 			logChan <- Log{Type: RecoverableErr, Data: err}
 		}
