@@ -273,11 +273,13 @@ func awaitWriteEvent(peersDB *PeersDB, logChan chan Log) {
 		logChan <- Log{Info, fmt.Sprintf("validated %s with result %t",
 			valdoc["path"], valdoc["isValid"])}
 
+		peersDB.ValidationsMtx.Lock()
 		_, err = validations.Put(ctx, valdoc)
 		if err != nil {
 			logChan <- Log{RecoverableErr, err}
 			continue
 		}
+		peersDB.ValidationsMtx.Unlock()
 	}
 }
 
@@ -322,11 +324,13 @@ func post(peersDB *PeersDB, path string, logChan chan Log) interface{} {
 	// TODO : check if it already exists/the data has been added already
 
 	// add the contribution block
+	peersDB.ContributionsMtx.Lock()
 	_, err = (*db).Add(ctx, dataJSON)
 	if err != nil {
 		logChan <- Log{Type: RecoverableErr, Data: err}
 		return err
 	}
+	peersDB.ContributionsMtx.Unlock()
 
 	return "File uploaded"
 }
@@ -423,11 +427,15 @@ func isValid(peersDB *PeersDB, path string) (bool, error) {
 		"isValid": validation.IsValid,
 		"voteCnt": validation.VoteCnt,
 	}
+
+	// TODO : not 100% sure we need these locks
+	peersDB.ValidationsMtx.Lock()
 	_, err = validations.Put(ctx, valdoc)
 	if err != nil {
 		isValid := valdoc["isValid"].(bool)
 		return isValid, err
 	}
+	peersDB.ValidationsMtx.Unlock()
 
 	return validation.IsValid, nil
 }
