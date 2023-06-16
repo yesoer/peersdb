@@ -107,7 +107,18 @@ func InitPeer(peersDB *PeersDB) error {
 		conf.ContributionsStoreAddr = db.Address().String()
 	}
 
-	// a creatable docsstore which no other peer can write to
+	// a creatable docsstore which no other peer can read or write to
+	ac = &accesscontroller.CreateAccessControllerOptions{
+		Access: map[string][]string{
+			"write": {
+				conf.PeerID,
+			},
+			"read": {
+				conf.PeerID,
+			},
+		},
+	}
+
 	storeType = "docstore"
 	create := true
 	docstoreOpt := documentstore.DefaultStoreOptsForMap("path")
@@ -115,6 +126,7 @@ func InitPeer(peersDB *PeersDB) error {
 		Create:            &create,
 		StoreType:         &storeType,
 		StoreSpecificOpts: docstoreOpt,
+		AccessController:  ac,
 	}
 
 	// see if there is a persisted store available
