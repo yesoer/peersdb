@@ -22,7 +22,8 @@ type PeersDB struct {
 
 	// mutex to control access to the eventlog db across go routines
 	// TODO : use
-	EventLogDBMtx sync.RWMutex
+	ContributionsMtx sync.RWMutex
+	ValidationsMtx   sync.RWMutex
 
 	Config *config.Config
 }
