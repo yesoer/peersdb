@@ -113,10 +113,10 @@ func InitPeer(peersDB *PeersDB) error {
 	ac = &accesscontroller.CreateAccessControllerOptions{
 		Access: map[string][]string{
 			"write": {
-				conf.PeerID,
+				(*peersDB.Orbit).Identity().ID,
 			},
 			"read": {
-				conf.PeerID,
+				(*peersDB.Orbit).Identity().ID,
 			},
 		},
 	}
