@@ -58,7 +58,7 @@ func InitPeer(peersDB *PeersDB) error {
 
 	// set cache dir
 	cacheDir := filepath.Join(os.Getenv("HOME"), ".cache")
-	cache := filepath.Join(cacheDir, "peersdb", *config.FlagRepo, "transactions-store")
+	cache := filepath.Join(cacheDir, "peersdb", *config.FlagRepo, "orbitdb")
 
 	// set orbitdb create options
 	orbitopts := &orbitdb.NewOrbitDBOptions{
@@ -88,10 +88,12 @@ func InitPeer(peersDB *PeersDB) error {
 
 	// enable create if this is a root node
 	storeType := "eventlog"
+	contributionsCache := filepath.Join(cache, "contributions")
 	dbopts := orbitdb.CreateDBOptions{
 		Create:           config.FlagRoot,
 		StoreType:        &storeType,
 		AccessController: ac,
+		Directory:        &contributionsCache,
 	}
 
 	// see if there is a persisted store available
@@ -122,11 +124,13 @@ func InitPeer(peersDB *PeersDB) error {
 	storeType = "docstore"
 	create := true
 	docstoreOpt := documentstore.DefaultStoreOptsForMap("path")
+	validationsCache := filepath.Join(cache, "validations")
 	dbopts = orbitdb.CreateDBOptions{
 		Create:            &create,
 		StoreType:         &storeType,
 		StoreSpecificOpts: docstoreOpt,
 		AccessController:  ac,
+		Directory:         &validationsCache,
 	}
 
 	// see if there is a persisted store available
