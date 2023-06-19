@@ -83,13 +83,38 @@ As a rule of thumb for **merging** make sure to rebase before doing so.
 
 # Architecture
 
-## Replication
+## Store Replication
+
+The contributions store, holds file-ipfs-paths. It needs to be replicated for peers to know which data is available.
 
 A new peersdb instance could be a root instance. The root instance creates a 
 "transactions" orbitdb EventLog store. A new non-root instance will start and
 when it's connected to root it will replicate said store. From now on they 
 will replicate via events. If a node restarts they will try to load the datastore
 from disk.
+
+## IPFS Replication
+
+## Validation
+
+Files need to be validated. The approach is as follows :
+
+when peers add new contribution blocks they try validating the data 
+  - implemented by `awaitWriteEvent`
+
+each peer keeps their own validation records
+  - in a persistent docstore called `validations`
+
+when someone wants to know (implemented in `isValid` which uses `accValidations`)
+1. they retrieve all info (signed by the sender) via pubsub
+    - announce their wish via topic : "validation" with message data : their id + the files cid
+    - receive votes via topic : their id + the files cid
+        - peers start listening for those requests in `awaitValidationReq`
+2. count votes themselves
+    - when more than half of the connected peers have voted for valid, it's valid
+    else the node validates the data itself
+3. persist the result
+    - in the `validations` store mentioned earlier
 
 # APIs
 
