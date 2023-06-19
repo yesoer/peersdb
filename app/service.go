@@ -377,6 +377,12 @@ func query(peersDB *PeersDB, logChan chan Log) []Contribution {
 			continue
 		}
 
+		// TODO : optionally filter by validity
+		valid, err := isValid(peersDB, jsonRes[i].Path)
+		if err == nil && valid {
+			fmt.Print("valid file found")
+		}
+
 		if err != nil {
 			logChan <- Log{Type: RecoverableErr, Data: err}
 		}
@@ -452,18 +458,18 @@ const validationReqTopic = "validation"
 
 // requests and accumulates votes via pubsub
 // returns a probability between 0 and 1 for validity of data
-func accValidations(peersDB *PeersDB, path string) (Validation, error) {
+func accValidations(peersDB *PeersDB, pth string) (Validation, error) {
 	// receive votes via topic : this nodes id + the files path
 	coreAPI := (*peersDB.Orbit).IPFS()
 	nodeId := (*peersDB.Config).PeerID
 	ctx := context.Background()
-	resSub, err := coreAPI.PubSub().Subscribe(ctx, nodeId+path)
+	resSub, err := coreAPI.PubSub().Subscribe(ctx, nodeId+pth)
 	if err != nil {
 		return Validation{}, err
 	}
 
 	// announce their wish via topic : "validation" with message data : their id + the files cid
-	req := ValidationReq{path, nodeId}
+	req := ValidationReq{pth, nodeId}
 	reqData, err := json.Marshal(req)
 	if err != nil {
 		return Validation{}, err
@@ -516,12 +522,31 @@ func accValidations(peersDB *PeersDB, path string) (Validation, error) {
 	}
 
 	totalVotes := validCnt + inValidCnt
-	validation := Validation{path, false, uint32(totalVotes)}
+	validation := Validation{pth, false, uint32(totalVotes)}
 
 	// if more than half have voted for valid, the data is considered valid
-	isValid := float64(validCnt) / float64(totalVotes)
-	if isValid > .5 {
+	// else self-validate
+	// TODO : use KnownAddrs as reference instead of Peers ?
+	peers, err := coreAPI.Swarm().Peers(ctx)
+	if err != nil {
+		return Validation{}, err
+	}
+	numPeers := float64(len(peers))
+	if float64(validCnt) > (.5 * numPeers) {
 		validation.IsValid = true
+	} else {
+
+		// get the file from ipfs
+		parsedPth := path.New(pth)
+		file, err := coreAPI.Unixfs().Get(ctx, parsedPth)
+		if err != nil {
+			return Validation{}, err
+		}
+
+		validation.IsValid, err = validateStub(file)
+		if err != nil {
+			return Validation{}, err
+		}
 	}
 
 	return validation, nil
