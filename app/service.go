@@ -57,7 +57,7 @@ func Service(peersDB *PeersDB,
 	// wait for write events to handle validation
 	go awaitWriteEvent(peersDB, logChan)
 
-	// TODO : wait for and handle "validation" requests
+	// wait for and handle "validation" requests
 	go awaitValidationReq(peersDB, logChan)
 
 	//--------------------------------------------------------------------------
@@ -400,7 +400,7 @@ type Validation struct {
 // checks if the file identified by the ipfs path is valid according to local
 // entries or peers
 func isValid(peersDB *PeersDB, path string) (bool, error) {
-	// TODO : check local entry
+	// check local entry
 	validations := *peersDB.Validations
 	getopts := iface.DocumentStoreGetOptions{
 		CaseInsensitive: false,
@@ -424,8 +424,6 @@ func isValid(peersDB *PeersDB, path string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-
-	// TODO : if too little response (check validation.VoteCnt), self validate
 
 	// persist result
 	valdoc := map[string]interface{}{
