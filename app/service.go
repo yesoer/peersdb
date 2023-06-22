@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os/user"
+	"path/filepath"
 	"peersdb/config"
 	"peersdb/ipfs"
 	"strings"
@@ -71,7 +73,9 @@ func Service(peersDB *PeersDB,
 
 		switch req.Method.Cmd {
 		case GET.Cmd:
-			res = "Not implemented"
+			ipfsPath := req.Args[0]
+			res = get(peersDB, ipfsPath, logChan)
+
 		case POST.Cmd:
 			path := req.Args[0]
 			res = post(peersDB, path, logChan)
@@ -293,6 +297,40 @@ type Contribution struct {
 	Contributor string `json:"contributor"` // ipfs node id
 }
 
+func get(peersDB *PeersDB, ipfsPath string, logChan chan Log) interface{} {
+	db := *peersDB.Contributions
+	coreAPI := db.IPFS()
+	ctx := context.Background()
+
+	pth := path.New(ipfsPath)
+	n, err := coreAPI.Unixfs().Get(ctx, pth)
+	if err != nil {
+		logChan <- Log{RecoverableErr, err}
+		return nil
+	}
+
+	// determine destination location
+	// TODO : can we get the file info/name from the node ?
+	// otherwise add it to contribution block metadata
+	fileName := strings.TrimPrefix(ipfsPath, "/ipfs/")
+	dest := *config.FlagDownloadDir + fileName
+	if dest[:2] == "~/" {
+		// expand the tilde (~) notation to the user's home directory
+		usr, err := user.Current()
+		if err != nil {
+			return err
+		}
+		dir := usr.HomeDir
+		dest = filepath.Join(dir, dest[2:])
+	}
+
+	if err := files.WriteTo(n, dest); err != nil {
+		logChan <- Log{RecoverableErr, err}
+		return nil
+	}
+
+	return "stored " + ipfsPath + " successfully under " + dest
+}
 // executes post command
 func post(peersDB *PeersDB, path string, logChan chan Log) interface{} {
 	db := peersDB.Contributions
