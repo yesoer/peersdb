@@ -13,3 +13,4 @@ var FlagRepo = flag.String("repo", "peersdb", "configure the repo/directory name
 var FlagDevLogs = flag.Bool("devlogs", false, "enable development level logging for orbitdb")
 var FlagRoot = flag.Bool("root", false, "creating a root node means it's possible to create a new datastore")
 var FlagDownloadDir = flag.String("download-dir", "~/Downloads/", "the destination path for downloaded data")
+var FlagFullReplica = flag.Bool("full-replica", false, "pins all added data")
