@@ -31,6 +31,8 @@ You may use the following flags to configure your peersdb instance.
 | -repo | configure the repo/directory name for the ipfs node | peersdb |
 | -devlogs | enables development level logging | false |
 | -root | makes this node a root node meaning it will create it's own datastore | false |
+| -download-dir | configure where to store downloaded files etc. | ~/Downloads/ |
+| -full-replica | enable full data replication through ipfs pinning | false |
 
 There is also a persitent config file but you probably don't want to change 
 anything in there.
@@ -95,6 +97,9 @@ from disk.
 
 ## IPFS Replication
 
+IPFS Replication is achieved through IPFS pinning. It needs to be enabled via the `full-replica` flag.
+Pinning is triggered whenever the orbitdb contribution store receives data i.e. the replicated event is triggered.
+
 ## Validation
 
 Files need to be validated. The approach is as follows :
@@ -122,6 +127,21 @@ when someone wants to know (implemented in `isValid` which uses `accValidations`
 
 Shell commands look like this :
 `<command> <arg1> <arg2> ...`
+
+### get
+
+**Description :**
+Download ipfs content by it's ipfs path. The destination can be configured via the `-download-dir` flag.
+Ipfs paths can be retrieved via the `query` command.
+
+**Args :**
+
+| Description                   | Example | 
+|-------------------------------|------------------------------------------------------------------------------|
+| The path of some ipfs content | `/ipfs/4001/p2p/QmRQSrmFNEWx7qKF5jrdLJ4oS8dZzYpTKDoAKoDzL3zXr7` |
+
+**Returns :**
+A status string.
 
 ### connect 
 
