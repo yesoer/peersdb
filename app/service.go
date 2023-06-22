@@ -16,6 +16,7 @@ import (
 	"berty.tech/go-orbit-db/iface"
 	"berty.tech/go-orbit-db/stores"
 	files "github.com/ipfs/go-ipfs-files"
+	"github.com/ipfs/interface-go-ipfs-core/options"
 	"github.com/ipfs/interface-go-ipfs-core/path"
 	"github.com/libp2p/go-libp2p/core/event"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -61,6 +62,11 @@ func Service(peersDB *PeersDB,
 
 	// wait for and handle "validation" requests
 	go awaitValidationReq(peersDB, logChan)
+
+	// wait for and handle replication event
+	if *config.FlagFullReplica {
+		go awaitReplicateEvent(peersDB, logChan)
+	}
 
 	//--------------------------------------------------------------------------
 	// handle API requests
@@ -331,6 +337,7 @@ func get(peersDB *PeersDB, ipfsPath string, logChan chan Log) interface{} {
 
 	return "stored " + ipfsPath + " successfully under " + dest
 }
+
 // executes post command
 func post(peersDB *PeersDB, path string, logChan chan Log) interface{} {
 	db := peersDB.Contributions
@@ -662,5 +669,68 @@ func validationMapToStruct(m map[string]interface{}) Validation {
 		Path:    pth,
 		IsValid: isValid,
 		VoteCnt: voteCntU,
+	}
+}
+
+// wait for the replicated event and pin data
+// TODO : this is very similar to awaitWriteEvent, try to combine the two and see
+// if it makes sense
+func awaitReplicateEvent(peersDB *PeersDB, logChan chan Log) {
+	// since contributions datastore may be nil, wait till it isn't
+	for peersDB.Contributions == nil {
+		time.Sleep(time.Second)
+	}
+
+	// subscribe to replicated event
+	contributions := *peersDB.Contributions
+	subdb, err := contributions.EventBus().Subscribe([]interface{}{
+		new(stores.EventReplicated),
+	})
+	if err != nil {
+		logChan <- Log{RecoverableErr, err}
+		return
+	}
+	defer subdb.Close()
+
+	coreAPI := (*peersDB.Orbit).IPFS()
+
+	subChan := subdb.Out()
+	for {
+		// get the new entry
+		e := <-subChan
+		re := e.(stores.EventReplicated)
+
+		// check if the replication was executed on the contributions db
+		if re.Address.GetPath() != contributions.Address().GetPath() {
+			continue
+		}
+
+		entries := re.Entries
+
+		for _, entry := range entries {
+			// get the ipfs-log operation from the entry
+			opStr := entry.GetPayload()
+			var op opDoc
+			err := json.Unmarshal(opStr, &op)
+			if err != nil {
+				logChan <- Log{RecoverableErr, err}
+				continue
+			}
+
+			// get the ipfs file path the from the contribution block
+			var contribution Contribution
+			err = json.Unmarshal(op.Value, &contribution)
+			if err != nil {
+				logChan <- Log{RecoverableErr, err}
+				continue
+			}
+			pth := contribution.Path
+
+			// add pin
+			ctx := context.Background()
+			parsedPth := path.New(pth)
+			opts := options.Pin.Recursive(true)
+			coreAPI.Pin().Add(ctx, parsedPth, opts)
+		}
 	}
 }
