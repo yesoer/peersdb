@@ -91,6 +91,9 @@ func createRepo(temporary bool) (string, error) {
 	// Start without peers
 	// TODO : should private/public network be controlled by config ?
 	cfg.Bootstrap = []string{}
+	if *peersdbConf.FlagBootstrap != "" {
+		cfg.Bootstrap = append(cfg.Bootstrap, *peersdbConf.FlagBootstrap)
+	}
 
 	// There seems to be a problem with pubsub under MDNS ,which leads to
 	// nodes on the same system not being able to communicate  :
