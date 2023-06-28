@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: peersdb-deployment
+spec:
+  replicas: {{ .Values.deployment.replicaCount }}
+  selector:
+    matchLabels:
+      app: peersdb
+  template:
+    metadata:
+      labels:
+        app: peersdb
+    spec:
+      containers:
+        - name: peersdb
+          image: {{ .Values.deployment.image.repository }}:{{ .Values.deployment.image.tag }}
+          ports:
+            - containerPort: 8080
+            - containerPort: 4001
+          env:
+            - name: ROOT
+              value: {{ quote .Values.params.root }}
+            - name: ID
+              value: {{ .Values.params.id }}
+            - name: ROOTADDR
+              value: {{ .Values.params.rootAddr }}
