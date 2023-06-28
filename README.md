@@ -7,10 +7,13 @@ A distributed p2p database, based on orbitdb but extend with blockchain technolo
   - [Flags](#flags)
 - [Contribution](#contribution)
 - [Architecture](#architecture)
-  - [Replication](#replication)
+  - [Store Replication](#store-replication)
+  - [IPFS Replication](#ipfs-replication)
+  - [Validation](#validation)
 - [APIs](#apis)
   - [Shell](#shell)
   - [HTTP](#http)
+- [Evaluation](#evaluation)
 
 # Get Started
 
@@ -33,6 +36,7 @@ You may use the following flags to configure your peersdb instance.
 | -root | makes this node a root node meaning it will create it's own datastore | false |
 | -download-dir | configure where to store downloaded files etc. | ~/Downloads/ |
 | -full-replica | enable full data replication through ipfs pinning | false |
+| -bootstrap    | set a bootstrap peer to connect to on startup | "" |
 
 There is also a persitent config file but you probably don't want to change 
 anything in there.
@@ -203,3 +207,32 @@ Execute a command.
 ```
 
 cmd identifies the same commands as described under [Shell](#shell). They also receive the same arguments.
+
+# Evaluation
+
+The `eval` folder contains everything we need for some predefined scenarios on a configurable cluster of nodes. 
+To make it short : we use Helm charts to deploy docker containers on kubernetes, and scripts of http requests to define certain workflows.
+This allows us to easily evaluate how well peersdb handles certain tasks like replication. 
+Our runs were largely executed on GCP but if you want to dabble around with them locally we'd advice to use kind.
+
+> Note : the dockerfile aswell as the helm chart are NOT fit for production usage.
+
+If you want to build your own docker image you can do it like this :
+```
+docker build -t yesoer/peersdb ./eval/dockerfile
+```
+
+To deploy the helm chart(s) :
+```
+helm install -f ./eval/root-peer-values.yaml peersdb-root ./eval/helm
+helm install -f ./eval/peer-values.yaml peersdb-peers ./eval/helm
+```
+
+The workflows executed on the cluster use the HTTP API and are defined programatically.
+They have to be run in a pod aswell,  hence you need to start it :
+```
+kubectl apply -f ./eval/script_k8s.yaml
+```
+
+If you want to change the workflow, simply change the script referenced in the yaml.
+
