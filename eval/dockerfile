@@ -1,0 +1,41 @@
+# start with a base Golang image for building
+FROM golang:latest AS build
+
+WORKDIR /app
+
+# get dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# copy the src code
+COPY . .
+
+# build the Go application
+# CGO_ENABLED=0 : we are aiming for a static binary and a minimal container, CGO is disabled to avoid any dependencies on C libraries
+# GOOS=linux : compile for linux
+# -a : rebuild all packages
+# -installsuffix ncgo : suffix to differentiate this build from previous ones
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+
+# start with a clean,minimal base
+FROM scratch
+
+# copy binary
+COPY --from=build /app/main /app/main
+
+# set root default
+ENV ROOT false
+
+# expose http and ipfs port
+EXPOSE 8080 4001
+
+# if the ID this node should use is not empty (usually in case of the root node)
+# write it to the config 
+RUN if [ -n "$ID" ]; then echo "{\"peerID\": \"$ID\"}" > ./peersdb_config; fi
+
+# container entry
+# enable http api
+# set whether this node is a root node or not
+# set a bootstrap peer to connect to
+ENTRYPOINT ["/app/main", "-http", "-root=", "$ROOT", "-bootstrap=", "$ROOTADDR"]
+
