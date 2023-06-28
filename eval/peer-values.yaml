@@ -1,0 +1,22 @@
+# This file defines regular peers. You will need one instance of a root peer and
+# might want to play around with the replica count to scale your experiments.
+
+deployment:
+  replicaCount: 2
+  image:
+    repository: docker.io/yesoer/peersdb
+    tag: latest
+
+service:
+  setIP: false
+  ip: 10.96.240.103
+
+# these parameters are passed down to the docker image and used as parameters
+# for the binary execution
+params:
+  # whether the replicas should be root nodes 
+  root: false
+  # the id for this peer
+  id: "Qmd5pQHt4Y7kUSEpH8AvhBpF9xrm7VABy3cqkQwSYeoFC3"
+  # ipfs addr of the root peer, ip and id must match those in root-peeer-values
+  rootAddr: "/ip4/10.96.240.10/tcp/4001/p2p/3Qmd5pQHt4Y7kUSEpH8AvhBpF9xrm7VABy3cqkQwSYeoFC3"
