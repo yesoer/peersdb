@@ -3,6 +3,7 @@ package api
 import (
 	"bufio"
 	"errors"
+	"io/ioutil"
 	"os"
 	"peersdb/app"
 	"strings"
@@ -60,6 +61,22 @@ func Shell(reqChan chan app.Request,
 		case app.GET.Cmd:
 			processReq(cmdList, app.GET, reqChan, resChan, logChan)
 		case app.POST.Cmd:
+			if len(cmdList) != app.POST.ArgCnt+1 {
+				logChan <- app.Log{
+					Type: app.RecoverableErr,
+					Data: errors.New("double check the given args")}
+				return
+			}
+
+			// substitute path for file contents
+			filePath := cmdList[1]
+			fileBytes, err := ioutil.ReadFile(filePath)
+			if err != nil {
+				logChan <- app.Log{Type: app.RecoverableErr, Data: err}
+				break
+			}
+			cmdList = []string{app.POST.Cmd, string(fileBytes)}
+
 			processReq(cmdList, app.POST, reqChan, resChan, logChan)
 		case app.CONNECT.Cmd:
 			processReq(cmdList, app.CONNECT, reqChan, resChan, logChan)
