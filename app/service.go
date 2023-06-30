@@ -30,9 +30,9 @@ type Method struct {
 }
 
 var (
-	GET     Method = Method{"get", 1}     // needs the filepath
-	POST    Method = Method{"post", 1}    // needs the cid
-	CONNECT Method = Method{"connect", 1} // needs the peer iden
+	GET     Method = Method{"get", 1}     // needs the ipfs filepath
+	POST    Method = Method{"post", 1}    // needs a string of bytes representing the file
+	CONNECT Method = Method{"connect", 1} // needs the peer address
 	QUERY   Method = Method{"query", 0}
 )
 
@@ -83,10 +83,12 @@ func Service(peersDB *PeersDB,
 			res = get(peersDB, ipfsPath, logChan)
 
 		case POST.Cmd:
-			path := req.Args[0]
-			res = post(peersDB, path, logChan)
+			file := req.Args[0]
+			node := files.NewBytesFile([]byte(file))
+			res = post(peersDB, node, logChan)
 
 		case CONNECT.Cmd:
+			// type checking
 			peerId := req.Args[0]
 			res = connect(peersDB, peerId, logChan)
 
@@ -339,7 +341,11 @@ func get(peersDB *PeersDB, ipfsPath string, logChan chan Log) interface{} {
 }
 
 // executes post command
-func post(peersDB *PeersDB, path string, logChan chan Log) interface{} {
+func post(peersDB *PeersDB, node files.Node, logChan chan Log) interface{} {
+	ctx := context.Background()
+	coreAPI := (*peersDB.Orbit).IPFS()
+
+	// contributions store may be nil for non-root nodes
 	db := peersDB.Contributions
 	if db == nil {
 		err := errors.New("you need a datastore first, try connecting to a peer")
@@ -347,11 +353,8 @@ func post(peersDB *PeersDB, path string, logChan chan Log) interface{} {
 		return err
 	}
 
-	// add a file to the ipfs store
-	// DEVNOTE : test file : "./sample-data/r4.xlarge_i-0f4e4b248a6aa957a_wordcount_spark_large_3/sar.csv"
-	ctx := context.Background()
-	coreAPI := (*peersDB.Orbit).IPFS()
-	filePath, err := ipfs.AddToIPFSByPath(ctx, coreAPI, path)
+	// store node in ipfs' blockstore as merkleDag and get it's key (= path)
+	filePath, err := coreAPI.Unixfs().Add(ctx, node)
 	if err != nil {
 		logChan <- Log{Type: RecoverableErr, Data: err}
 		return err
