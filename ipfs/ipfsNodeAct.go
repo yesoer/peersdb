@@ -7,33 +7,13 @@ import (
 
 	"berty.tech/go-orbit-db/iface"
 	files "github.com/ipfs/go-ipfs-files"
-	icore "github.com/ipfs/interface-go-ipfs-core"
-	"github.com/ipfs/interface-go-ipfs-core/path"
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
 )
 
-// Adds a file to orbitdb by adding it to ipfs and storing the resulting hash
-// in orbitdb
-func AddToIPFSByPath(ctx context.Context, IPFSCoreAPI icore.CoreAPI, path string) (path.Resolved, error) {
-	// get a file as node
-	node, err := getIPFSNode(path)
-	if err != nil {
-		return nil, err
-	}
-
-	// store node in ipfs' blockstore as merkleDag and get it's key (= path)
-	key, err := IPFSCoreAPI.Unixfs().Add(ctx, node)
-	if err != nil {
-		return nil, err
-	}
-
-	return key, err
-}
-
 // Given a path get the corresponding node where node is a common interface for
 // files, directories and other special files
-func getIPFSNode(path string) (files.Node, error) {
+func GetIPFSNode(path string) (files.Node, error) {
 	fileStat, err := os.Stat(path)
 	if err != nil {
 		return nil, err
