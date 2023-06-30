@@ -207,6 +207,7 @@ Execute a command.
 ```
 
 cmd identifies the same commands as described under [Shell](#shell). They also receive the same arguments.
+The only **exception** ist the "POST" command, where one has to provide a base64 encoded file instead under the "file" key.
 
 # Evaluation
 
