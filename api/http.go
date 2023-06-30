@@ -1,7 +1,9 @@
 package api
 
 import (
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"peersdb/app"
 	"peersdb/config"
@@ -10,17 +12,40 @@ import (
 func commandHandler(reqChan chan<- app.Request,
 	resChan <-chan interface{}) http.HandlerFunc {
 
+	type HTTPRequest struct {
+		Method app.Method `json:"method"`
+		Args   []string   `json:"args"`
+		File   string     `json:"file"`
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		// parse the request body
-		var req app.Request
+		var req HTTPRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
+		// post request may send a file instead of the path
+		serviceReq := app.Request{
+			Method: req.Method,
+			Args:   req.Args,
+		}
+		if serviceReq.Method == app.POST && len(serviceReq.Args) < 1 {
+			decoded, err := base64.StdEncoding.DecodeString(req.File)
+			if err != nil {
+				fmt.Println("Error decoding Base64:", err)
+				return
+			}
+			serviceReq.Args = append(serviceReq.Args, string(decoded))
+		}
+
+		fmt.Print("\n service req ", serviceReq, "\n")
+
 		// send request
-		reqChan <- req
+		// TODO : we need to do an argument count check here aswell
+		reqChan <- serviceReq
 
 		// await response
 		res := <-resChan
