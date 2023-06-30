@@ -27,12 +27,12 @@ func commandHandler(reqChan chan<- app.Request,
 			return
 		}
 
-		// post request may send a file instead of the path
+		// post request expects a file instead of the path
 		serviceReq := app.Request{
 			Method: req.Method,
 			Args:   req.Args,
 		}
-		if serviceReq.Method == app.POST && len(serviceReq.Args) < 1 {
+		if serviceReq.Method == app.POST {
 			decoded, err := base64.StdEncoding.DecodeString(req.File)
 			if err != nil {
 				fmt.Println("Error decoding Base64:", err)
@@ -40,8 +40,6 @@ func commandHandler(reqChan chan<- app.Request,
 			}
 			serviceReq.Args = append(serviceReq.Args, string(decoded))
 		}
-
-		fmt.Print("\n service req ", serviceReq, "\n")
 
 		// send request
 		// TODO : we need to do an argument count check here aswell
