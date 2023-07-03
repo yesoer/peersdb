@@ -147,6 +147,7 @@ func InitPeer(peersDB *PeersDB) error {
 	}
 
 	peersDB.Config = conf
+	peersDB.Benchmark = &Benchmark{}
 
 	return nil
 }

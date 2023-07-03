@@ -21,11 +21,14 @@ type PeersDB struct {
 	Orbit         *iface.OrbitDB
 
 	// mutex to control access to the eventlog db across go routines
-	// TODO : use
 	ContributionsMtx sync.RWMutex
 	ValidationsMtx   sync.RWMutex
 
+	// persisted peersdb config
 	Config *config.Config
+
+	// benchmarks
+	Benchmark *Benchmark
 }
 
 // TODO : check out orbitdb logger (apparently safe for concurrent use and lightweight

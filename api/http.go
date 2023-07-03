@@ -51,7 +51,6 @@ func commandHandler(reqChan chan<- app.Request,
 		// convert data to json
 		jsonData, err := json.Marshal(res)
 		if err != nil {
-			// Handle error, for example:
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
