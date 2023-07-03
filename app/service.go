@@ -65,9 +65,7 @@ func Service(peersDB *PeersDB,
 	go awaitValidationReq(peersDB, logChan)
 
 	// wait for and handle replication event
-	if *config.FlagFullReplica {
-		go awaitReplicateEvent(peersDB, logChan)
-	}
+	go awaitReplicateEvent(peersDB, logChan)
 
 	//--------------------------------------------------------------------------
 	// handle API requests
@@ -684,7 +682,7 @@ func validationMapToStruct(m map[string]interface{}) Validation {
 	}
 }
 
-// wait for the replicated event and pin data
+// wait for the replicated event and pin data if full replication is enabled
 // TODO : this is very similar to awaitWriteEvent, try to combine the two and see
 // if it makes sense
 func awaitReplicateEvent(peersDB *PeersDB, logChan chan Log) {
@@ -729,26 +727,29 @@ func awaitReplicateEvent(peersDB *PeersDB, logChan chan Log) {
 				continue
 			}
 
-			// get the ipfs file path the from the contribution block
+			// parse to contribution block
 			var contribution Contribution
 			err = json.Unmarshal(op.Value, &contribution)
 			if err != nil {
 				logChan <- Log{RecoverableErr, err}
 				continue
 			}
-			pth := contribution.Path
 
-			// add pin
-			ctx := context.Background()
-			parsedPth := path.New(pth)
-			opts := options.Pin.Recursive(true)
-			coreAPI.Pin().Add(ctx, parsedPth, opts)
 			// store bootstrap and new contribution benchmark
 			if *config.FlagBenchmark {
 				peersDB.Benchmark.UpdateBootstrap(contribution.CreationTS)
 				peersDB.Benchmark.UpdateNewContributions(contribution.CreationTS)
 			}
 
+			// replicate by adding pin
+			if *config.FlagFullReplica {
+				pth := contribution.Path
+
+				ctx := context.Background()
+				parsedPth := path.New(pth)
+				opts := options.Pin.Recursive(true)
+				coreAPI.Pin().Add(ctx, parsedPth, opts)
+			}
 		}
 	}
 }
