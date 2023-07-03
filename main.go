@@ -92,6 +92,10 @@ func main() {
 	// await termination context
 	<-termCtx.Done()
 	fmt.Printf("Shutdown")
+
 	// DEVNOTE : general graceful shutdown stuff may go here
+
+	config.SaveStructAsJSON(peersDB.Config, *config.FlagRepo+"_config")
+	// close orbitdb instance
 	(*peersDB.Orbit).Close()
 }

@@ -16,9 +16,7 @@ type Config struct {
 //
 // loads the persistent config file into config struct
 func LoadConfig() (*Config, error) {
-	filename := *FlagRepo + "_config"
-
-	file, err := os.Open(filename)
+	file, err := os.Open(*FlagRepo + "_config")
 	if err != nil {
 		if os.IsNotExist(err) {
 			// default config in case none was found
@@ -47,16 +45,16 @@ func LoadConfig() (*Config, error) {
 	return config, nil
 }
 
-// writes persistent config file from config struct
-func SaveConfig(config *Config) error {
-	filename := *FlagRepo + "_config"
+// writes a file in json format from a struct
+// TODO : move this to a utils file/package
+func SaveStructAsJSON(s interface{}, path string) error {
 
-	data, err := json.MarshalIndent(config, "", "  ")
+	data, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
 		return err
 	}
 
-	err = ioutil.WriteFile(filename, data, 0644)
+	err = ioutil.WriteFile(path, data, 0644)
 	if err != nil {
 		return err
 	}

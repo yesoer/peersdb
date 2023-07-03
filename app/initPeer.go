@@ -147,7 +147,6 @@ func InitPeer(peersDB *PeersDB) error {
 	}
 
 	peersDB.Config = conf
-	config.SaveConfig(peersDB.Config)
 
 	return nil
 }

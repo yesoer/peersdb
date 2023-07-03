@@ -186,7 +186,6 @@ func awaitStoreExchange(peersDB *PeersDB, logChan chan Log) {
 
 			// persist store address
 			peersDB.Config.ContributionsStoreAddr = addr
-			config.SaveConfig(peersDB.Config)
 		}
 	}
 }
