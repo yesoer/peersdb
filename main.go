@@ -95,7 +95,12 @@ func main() {
 
 	// DEVNOTE : general graceful shutdown stuff may go here
 
+	// write config and benchmark to persistent files
 	config.SaveStructAsJSON(peersDB.Config, *config.FlagRepo+"_config")
+
+	benchmarkPath := *config.FlagRepo + "_benchmark"
+	config.SaveStructAsJSON(peersDB.Benchmark, benchmarkPath)
+
 	// close orbitdb instance
 	(*peersDB.Orbit).Close()
 }

@@ -15,3 +15,4 @@ var FlagRoot = flag.Bool("root", false, "creating a root node means it's possibl
 var FlagDownloadDir = flag.String("download-dir", "~/Downloads/", "the destination path for downloaded data")
 var FlagFullReplica = flag.Bool("full-replica", false, "pins all added data")
 var FlagBootstrap = flag.String("bootstrap", "", "set a bootstrap peer to connect to on startup")
+var FlagBenchmark = flag.Bool("benchmark", false, "enable benchmarking")

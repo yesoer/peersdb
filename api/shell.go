@@ -60,6 +60,7 @@ func Shell(reqChan chan app.Request,
 		switch cmdList[0] {
 		case app.GET.Cmd:
 			processReq(cmdList, app.GET, reqChan, resChan, logChan)
+
 		case app.POST.Cmd:
 			if len(cmdList) != app.POST.ArgCnt+1 {
 				logChan <- app.Log{
@@ -78,10 +79,16 @@ func Shell(reqChan chan app.Request,
 			cmdList = []string{app.POST.Cmd, string(fileBytes)}
 
 			processReq(cmdList, app.POST, reqChan, resChan, logChan)
+
 		case app.CONNECT.Cmd:
 			processReq(cmdList, app.CONNECT, reqChan, resChan, logChan)
+
 		case app.QUERY.Cmd:
 			processReq(cmdList, app.QUERY, reqChan, resChan, logChan)
+
+		case app.BENCHMARK.Cmd:
+			processReq(cmdList, app.BENCHMARK, reqChan, resChan, logChan)
+
 		default:
 			logChan <- app.Log{
 				Type: app.RecoverableErr,

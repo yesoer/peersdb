@@ -30,10 +30,11 @@ type Method struct {
 }
 
 var (
-	GET     Method = Method{"get", 1}     // needs the ipfs filepath
-	POST    Method = Method{"post", 1}    // needs a string of bytes representing the file
-	CONNECT Method = Method{"connect", 1} // needs the peer address
-	QUERY   Method = Method{"query", 0}
+	GET       Method = Method{"get", 1}     // needs the ipfs filepath
+	POST      Method = Method{"post", 1}    // needs a string of bytes representing the file
+	CONNECT   Method = Method{"connect", 1} // needs the peer address
+	QUERY     Method = Method{"query", 0}
+	BENCHMARK Method = Method{"benchmark", 0}
 )
 
 // Requests are an abstraction for the communication between this applications
@@ -94,6 +95,13 @@ func Service(peersDB *PeersDB,
 
 		case QUERY.Cmd:
 			res = query(peersDB, logChan)
+
+		case BENCHMARK.Cmd:
+			if !*config.FlagBenchmark {
+				res = "Benchmark is not enabled, use -benchmark to do so"
+			}
+
+			res = *peersDB.Benchmark
 		}
 
 		// send response
@@ -300,8 +308,9 @@ func validateStub(file files.Node) (bool, error) {
 }
 
 type Contribution struct {
-	Path        string `json:"path"`        // ipfs file path which includes the cid
-	Contributor string `json:"contributor"` // ipfs node id
+	Path        string    `json:"path"`        // ipfs file path which includes the cid
+	Contributor string    `json:"contributor"` // ipfs node id
+	CreationTS  time.Time `json:"creationTS"`  // timestamp of creation
 }
 
 func get(peersDB *PeersDB, ipfsPath string, logChan chan Log) interface{} {
@@ -361,7 +370,8 @@ func post(peersDB *PeersDB, node files.Node, logChan chan Log) interface{} {
 
 	// create the contribution block
 	ipfsPath := filePath.String()
-	data := Contribution{ipfsPath, peersDB.Config.PeerID}
+	ts := time.Now()
+	data := Contribution{ipfsPath, peersDB.Config.PeerID, ts}
 	dataJSON, err := json.Marshal(data)
 	if err != nil {
 		logChan <- Log{Type: RecoverableErr, Data: err}
@@ -733,6 +743,12 @@ func awaitReplicateEvent(peersDB *PeersDB, logChan chan Log) {
 			parsedPth := path.New(pth)
 			opts := options.Pin.Recursive(true)
 			coreAPI.Pin().Add(ctx, parsedPth, opts)
+			// store bootstrap and new contribution benchmark
+			if *config.FlagBenchmark {
+				peersDB.Benchmark.UpdateBootstrap(contribution.CreationTS)
+				peersDB.Benchmark.UpdateNewContributions(contribution.CreationTS)
+			}
+
 		}
 	}
 }
