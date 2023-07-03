@@ -151,6 +151,7 @@ func createNode(ctx context.Context, repoPath string) (*core.IpfsNode, error) {
 		ExtraOpts: map[string]bool{
 			"pubsub": true, // must for orbitdb
 		},
+		Permanent: true, // improve performance for long runs TODO : make this configurable for benchmarking
 	}
 
 	return core.NewNode(ctx, nodeOptions)
