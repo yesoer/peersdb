@@ -13,6 +13,7 @@ import (
 	"berty.tech/go-orbit-db/iface"
 	"berty.tech/go-orbit-db/stores/documentstore"
 	"github.com/ipfs/kubo/core/coreapi"
+	"github.com/libp2p/go-libp2p/p2p/host/eventbus"
 	"go.uber.org/zap"
 )
 
@@ -94,6 +95,7 @@ func InitPeer(peersDB *PeersDB) error {
 		StoreType:        &storeType,
 		AccessController: ac,
 		Directory:        &contributionsCache,
+		EventBus:         eventbus.NewBus(),
 	}
 
 	// see if there is a persisted store available
@@ -123,6 +125,7 @@ func InitPeer(peersDB *PeersDB) error {
 
 	storeType = "docstore"
 	create := true
+	replicate := false // no one else has write access
 	docstoreOpt := documentstore.DefaultStoreOptsForMap("path")
 	validationsCache := filepath.Join(cache, "validations")
 	dbopts = orbitdb.CreateDBOptions{
@@ -131,6 +134,8 @@ func InitPeer(peersDB *PeersDB) error {
 		StoreSpecificOpts: docstoreOpt,
 		AccessController:  ac,
 		Directory:         &validationsCache,
+		Replicate:         &replicate,
+		EventBus:          eventbus.NewBus(),
 	}
 
 	// see if there is a persisted store available

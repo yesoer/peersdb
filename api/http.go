@@ -89,6 +89,6 @@ func ServeHTTP(reqChan chan app.Request, resChan chan interface{}) {
 	// register handlers
 	server.Handle("/peersdb/command", mw(commandHandler(reqChan, resChan)))
 
-	// start the HTTP server on port 8080
+	// start the HTTP server
 	http.ListenAndServe(":"+*config.FlagHTTPPort, server)
 }
