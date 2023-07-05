@@ -6,6 +6,7 @@ A distributed p2p database, based on orbitdb but extend with blockchain technolo
 - [Get Started](#get-started)
   - [Flags](#flags)
 - [Contribution](#contribution)
+  - [Debugging](#debugging)
 - [Architecture](#architecture)
   - [Store Replication](#store-replication)
   - [IPFS Replication](#ipfs-replication)
@@ -86,6 +87,26 @@ As for the **commit body** there is no mandatory structure as of now.
 **Issues and Pull Requests** for now will not have any set guidelines.
 
 As a rule of thumb for **merging** make sure to rebase before doing so.
+
+## Debugging
+
+Since I had a rough start here is some help on how to use [delve](https://github.com/go-delve/delve) for debugging.
+
+From the root of this repo use the following command to start debugging (change the flags as needed) :
+```
+dlv debug peersdb -- -http -benchmark -http-port 8001 -ipfs-port 4001 -repo peersdb1 -root=true -devlogs 
+```
+
+Another difficulty was setting breakpoints in dependencies.
+Here is an example for setting a breakpoint in the basestores handleEventWrite method :
+```
+(dlv) b berty.tech/go-orbit-db/stores/basestore.(*BaseStore).handleEventWrite
+```
+
+The response for the command above will also include your local paths for those dependencies, so you can set breakpoints by line now :
+```
+(dlv) b /Users/<username>/go/pkg/mod/berty.tech/go-orbit-db@v1.21.0/stores/basestore/base_store.go:853
+```
 
 # Architecture
 
