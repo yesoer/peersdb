@@ -23,7 +23,7 @@ FROM alpine:latest
 COPY --from=build /app/main /app/main
 
 # set root default
-ENV ROOT false
+ENV ROOT=false
 
 # expose http and ipfs port
 EXPOSE 8080 4001
@@ -36,5 +36,5 @@ RUN if [ -n "$ID" ]; then echo "{\"peerID\": \"$ID\"}" > ./peersdb_config; fi
 # enable http api
 # set whether this node is a root node or not
 # set a bootstrap peer to connect to
-ENTRYPOINT ["/app/main", "-http", "-root=", "$ROOT", "-bootstrap=", "$ROOTADDR"]
+ENTRYPOINT /app/main -http -root="$ROOT" -bootstrap="$ROOTADDR"
 
