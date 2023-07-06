@@ -241,7 +241,7 @@ Our runs were largely executed on GCP but if you want to dabble around with them
 
 If you want to build your own docker image you can do it like this :
 ```
-docker build -t yesoer/peersdb ./eval/dockerfile
+docker build -t yesoer/peersdb -f eval/dockerfile .
 ```
 
 To deploy the helm chart(s) :
