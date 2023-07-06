@@ -3,12 +3,11 @@ FROM golang:latest AS build
 
 WORKDIR /app
 
-# get dependencies
-COPY go.mod go.sum ./
-RUN go mod download
-
 # copy the src code
 COPY . .
+
+# get dependencies
+RUN go mod download
 
 # build the Go application
 # CGO_ENABLED=0 : we are aiming for a static binary and a minimal container, CGO is disabled to avoid any dependencies on C libraries
