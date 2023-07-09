@@ -1,14 +1,11 @@
+{{- if .Values.service.enable }}
 apiVersion: v1
 kind: Service
 metadata:
   name: peersdb-service
 spec:
   type: ClusterIP
-  {{ if .Values.service.setIP }}
   clusterIP: {{ .Values.service.ip }}
-  {{ else }}
-  clusterIP: None
-  {{ end }}
   selector:
     app: peersdb
   ports:
@@ -20,4 +17,4 @@ spec:
       protocol: TCP
       port: 4001
       targetPort: 4001
-
+{{ end }}
