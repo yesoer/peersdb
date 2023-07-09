@@ -8,7 +8,7 @@ deployment:
     tag: latest
 
 service:
-  setIP: true
+  enable: true
   ip: 10.96.240.103
 
 # these parameters are passed down to the docker image and used as parameters
