@@ -21,7 +21,5 @@ spec:
           env:
             - name: ROOT
               value: {{ quote .Values.params.root }}
-            - name: ID
-              value: {{ .Values.params.id }}
-            - name: ROOTADDR
-              value: {{ .Values.params.rootAddr }}
+            - name: ROOTIP
+              value: {{ .Values.params.rootIP }}
