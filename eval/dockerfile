@@ -22,19 +22,11 @@ FROM alpine:latest
 # copy binary
 COPY --from=build /app/main /app/main
 
-# set root default
-ENV ROOT=false
-
 # expose http and ipfs port
 EXPOSE 8080 4001
-
-# if the ID this node should use is not empty (usually in case of the root node)
-# write it to the config 
-RUN if [ -n "$ID" ]; then echo "{\"peerID\": \"$ID\"}" > ./peersdb_config; fi
 
 # container entry
 # enable http api
 # set whether this node is a root node or not
 # set a bootstrap peer to connect to
-ENTRYPOINT /app/main -http -root="$ROOT" -bootstrap="$ROOTADDR"
-
+ENTRYPOINT /app/main -http -root="$ROOT" -bootstrap="$ROOTIP"
