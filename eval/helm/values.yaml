@@ -16,7 +16,5 @@ service:
 params:
   # whether the replicas should be root nodes 
   root: false
-  # the id for this peer
-  id: ""
-  # ipfs addr of the root peer, ip and id must match those in root-peeer-values
-  rootAddr: ""
+  # ip of the root peer, ip must match the one in root-peeer-values
+  rootIP: ""
