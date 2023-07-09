@@ -74,8 +74,9 @@ func Service(peersDB *PeersDB,
 	// logging them
 	for {
 		req := <-reqChan
-		var res interface{}
+		logChan <- Log{Info, "Received service request"}
 
+		var res interface{}
 		switch req.Method.Cmd {
 		case GET.Cmd:
 			ipfsPath := req.Args[0]
@@ -89,6 +90,7 @@ func Service(peersDB *PeersDB,
 		case CONNECT.Cmd:
 			// type checking
 			peerId := req.Args[0]
+			logChan <- Log{Info, "Connecting to " + peerId}
 			res = connect(peersDB, peerId, logChan)
 
 		case QUERY.Cmd:
