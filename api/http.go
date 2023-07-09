@@ -61,12 +61,17 @@ func commandHandler(reqChan chan<- app.Request,
 	}
 }
 
-func ServeHTTP(reqChan chan app.Request, resChan chan interface{}) {
+func ServeHTTP(reqChan chan app.Request, resChan chan interface{},
+	logChan chan app.Log) {
+
 	server := http.NewServeMux()
 
 	// middleware to handle CORS headers and preflight requests
 	mw := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ip := r.RemoteAddr
+			logChan <- app.Log{app.Info, "Received HTTP request from " + ip}
+
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.Header().Set("Access-Control-Allow-Methods", "POST")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
@@ -90,5 +95,6 @@ func ServeHTTP(reqChan chan app.Request, resChan chan interface{}) {
 	server.Handle("/peersdb/command", mw(commandHandler(reqChan, resChan)))
 
 	// start the HTTP server
+	logChan <- app.Log{app.Info, "Starting HTTP Server"}
 	http.ListenAndServe(":"+*config.FlagHTTPPort, server)
 }
