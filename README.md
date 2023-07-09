@@ -251,9 +251,11 @@ helm install -f ./eval/peer-values.yaml peersdb-peers ./eval/helm
 ```
 
 The workflows executed on the cluster use the HTTP API and are defined programatically.
-They have to be run in a pod aswell,  hence you need to start it :
+To run them, we will copy whichever script we want into the container and execute it manually.
+
 ```
-kubectl apply -f ./eval/script_k8s.yaml
+kubectl cp ./eval/workflows/post.sh default/<root pod>:/app/script.sh
+kubectl exec -it <root pod> -- /bin/sh
 ```
 
 If you want to change the workflow, simply change the script referenced in the yaml.
