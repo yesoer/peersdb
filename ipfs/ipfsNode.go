@@ -115,9 +115,9 @@ func createRepo(temporary bool) (string, error) {
 	}
 
 	// Configure swarm addresses/where to listen
-	// TODO : make port configurable
+	// TODO : make ip configurable
 	cfg.Addresses.Swarm = []string{
-		"/ip4/127.0.0.1/tcp/" + *peersdbConf.FlagIPFSPort,
+		"/ip4/0.0.0.0/tcp/" + *peersdbConf.FlagIPFSPort,
 		"/ip6/::1/tcp/" + *peersdbConf.FlagIPFSPort,
 	}
 
