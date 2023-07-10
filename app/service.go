@@ -129,8 +129,9 @@ func awaitConnected(peersDB *PeersDB, logChan chan Log) {
 		if ok && e.Connectedness == network.Connected && db != nil {
 			// send this stores id to peer by publishing it to the topic
 			// identified by their id
-			peerId := e.Peer.String()
 			cidDbId := (*db).Address().String()
+			logChan <- Log{Info, "Send contributions db " + cidDbId + " to peer for replication"}
+			peerId := e.Peer.String()
 			ctx := context.Background()
 			err := coreAPI.PubSub().Publish(ctx, peerId, []byte(cidDbId))
 			if err != nil {
@@ -165,6 +166,7 @@ func awaitStoreExchange(peersDB *PeersDB, logChan chan Log) {
 		// in case we started without any db, replicate this one
 		if peersDB.Contributions == nil {
 			addr := string(msg.Data())
+			logChan <- Log{Info, "Replicate db " + addr}
 			create := false
 			storeType := "eventlog"
 
