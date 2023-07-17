@@ -254,7 +254,7 @@ The workflows executed on the cluster use the HTTP API and are defined programat
 To run them, we will copy whichever script we want into the container and execute it manually.
 
 ```
-kubectl cp ./eval/workflows/post.sh default/<root pod>:/app/script.sh
+kubectl cp ./eval/workflows/ default/<root pod>:/app/
 kubectl exec -it <root pod> -- /bin/sh
 ```
 
