@@ -99,6 +99,7 @@ func Service(peersDB *PeersDB,
 		case BENCHMARK.Cmd:
 			if !*config.FlagBenchmark {
 				res = "Benchmark is not enabled, use -benchmark to do so"
+				break
 			}
 
 			res = *peersDB.Benchmark
@@ -156,6 +157,8 @@ func awaitStoreExchange(peersDB *PeersDB, logChan chan Log) {
 	}
 
 	for {
+		// TODO : refactor to return if contributions is present
+
 		// received data should contain the id of the peers db
 		msg, err := sub.Next(context.Background())
 		if err != nil {
