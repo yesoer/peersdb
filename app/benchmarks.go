@@ -17,6 +17,10 @@ type Benchmark struct {
 	// for each new contribution, that is not part of the bootstrapping process,
 	// how long did it take to replicate
 	NewContributions []time.Duration `json:"new-contribution"`
+
+	// the region this node is working from
+	Region string `json:"region"`
+}
 }
 
 // bootstrapping-time is the time it takes a new node to gather all existing data.

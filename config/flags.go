@@ -16,3 +16,4 @@ var FlagDownloadDir = flag.String("download-dir", "~/Downloads/", "the destinati
 var FlagFullReplica = flag.Bool("full-replica", false, "pins all added data")
 var FlagBootstrap = flag.String("bootstrap", "", "set a bootstrap peer to connect to on startup")
 var FlagBenchmark = flag.Bool("benchmark", false, "enable benchmarking")
+var FlagRegion = flag.String("region", "", "the region this node is working from")

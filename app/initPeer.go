@@ -157,6 +157,9 @@ func InitPeer(peersDB *PeersDB) error {
 
 	peersDB.Config = conf
 	peersDB.Benchmark = &Benchmark{}
+	if *config.FlagRegion != "" {
+		peersDB.Benchmark.Region = *config.FlagRegion
+	}
 
 	// connect to a bootstrap peer
 	if *config.FlagBootstrap != "" {
