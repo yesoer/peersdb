@@ -5,6 +5,7 @@ install_tools() {
     apk update
     apk add git
     apk add curl
+    apk add jq
 }
 
 # requires git to be present
@@ -69,4 +70,16 @@ query() {
 gather_benchmarks() {
     curl --location 'http://127.0.0.1:8080/peersdb/benchmarks' \
         --header 'Content-Type: application/json'
+}
+
+store_bm_csv() {
+    # convert JSON data to CSV format
+    csv_data=$(echo "$1" | jq -r '.[] | [.bootstrap, .maxc, .minc, .averagec, .region] | @csv')
+
+    # add header row
+    header="Bootstrap time, Maximum time for replication, Minimum time for replication, Average replication time,Node Region"
+
+    # create a new file and store the CSV data
+    echo "$header" > benchmark_raw.csv
+    echo "$csv_data" >> benchmark_raw.csv
 }
