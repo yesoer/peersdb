@@ -11,6 +11,11 @@ service:
   enable: true
   ip: 10.96.240.103
 
+# use the node selector to deploy on specific nodes via label
+nodeSelector:
+  enable: false
+  region: ""
+
 # these parameters are passed down to the docker image and used as parameters
 # for the binary execution
 params:
