@@ -38,6 +38,7 @@ You may use the following flags to configure your peersdb instance.
 | -download-dir | configure where to store downloaded files etc. | ~/Downloads/ |
 | -full-replica | enable full data replication through ipfs pinning | false |
 | -bootstrap    | set a bootstrap peer to connect to on startup | "" |
+| -benchmark    | enables benchmarking on this node | false |
 
 There is also a persitent config file but you probably don't want to change 
 anything in there.
@@ -241,7 +242,12 @@ Our runs were largely executed on GCP but if you want to dabble around with them
 
 If you want to build your own docker image you can do it like this :
 ```
-docker build -t yesoer/peersdb -f eval/dockerfile .
+docker buildx build --platform linux/amd64,linux/arm64 --push -t yesoer/peersdb:latest -f eval/dockerfile .
+```
+this way the image will be built for amd64 and arm64 architectures and directly pushed to the configured image repository.
+If you don't care about multi-architecture builds you may simply use : 
+```
+docker build -t yesoer/peersdb:latest -f eval/dockerfile .
 ```
 
 To deploy the helm chart(s) :
@@ -260,3 +266,9 @@ kubectl exec -it <root pod> -- /bin/sh
 
 If you want to change the workflow, simply change the script referenced in the yaml.
 
+For deploying on specific nodes (relevant when evaluating in a cluster with nodes in different regions)
+use the following approach :
+```
+kubectl label nodes <you node> region=<your node's region>
+helm install -f ./eval/peer-values.yaml peersdb-peers ./eval/helm --set nodeSelector.region=<your nodes region>
+```
