@@ -23,3 +23,7 @@ spec:
               value: {{ quote .Values.params.root }}
             - name: ROOTIP
               value: {{ .Values.params.rootIP }}
+      {{ if .Values.nodeSelector.enable }}
+      nodeSelector:
+        region: {{ .Values.nodeSelector.region }}
+      {{ end }}
