@@ -7,13 +7,13 @@
 echo "Setup"
 install_tools
 clone_c3o
-
-# zip dataset
-echo "Zip c3o dataset"
 apk add zip 
+
+# zip c3o dataset
+echo "Zip c3o dataset"
 zip -r dataset.zip "./c3o-experiments"
 
-# post the scout dataset
+# post the c3o dataset
 echo "Post dataset.zip"
 post "dataset.zip"
 
@@ -22,4 +22,7 @@ sleep 1m
 
 # gather and store benchmarks
 echo "Get Benchmarks"
-gather_benchmarks > benchmarks.json
+bm=$(gather_benchmarks)
+echo $bm
+
+store_bm_csv $bm
