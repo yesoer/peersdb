@@ -125,22 +125,26 @@ func awaitConnected(peersDB *PeersDB, logChan chan Log) {
 
 	for e := range subipfs.Out() {
 		e, ok := e.(event.EvtPeerConnectednessChanged)
+		fmt.Print("\nConnectedness : ", e)
 
 		// on established connection
-		if ok && e.Connectedness == network.Connected && db != nil {
-			// send this stores id to peer by publishing it to the topic
-			// identified by their id
-			cidDbId := (*db).Address().String()
-			logChan <- Log{Info, "Send contributions db " + cidDbId + " to peer for replication"}
-			peerId := e.Peer.String()
-			ctx := context.Background()
-			err := coreAPI.PubSub().Publish(ctx, peerId, []byte(cidDbId))
-			if err != nil {
-				logChan <- Log{Type: RecoverableErr, Data: err}
-			}
+		go func() {
+			if ok && e.Connectedness == network.Connected && db != nil {
+				// TODO : can we await some event that the peer is ready
+				time.Sleep(time.Second * 5)
 
-			continue
-		}
+				// send this stores id to peer by publishing it to the topic
+				// identified by their id
+				cidDbId := (*db).Address().String()
+				logChan <- Log{Info, "Send contributions db " + cidDbId + " to peer for replication"}
+				peerId := e.Peer.String()
+				ctx := context.Background()
+				err := coreAPI.PubSub().Publish(ctx, peerId, []byte(cidDbId))
+				if err != nil {
+					logChan <- Log{Type: RecoverableErr, Data: err}
+				}
+			}
+		}()
 	}
 }
 
