@@ -1,14 +1,25 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"runtime"
 	"time"
+
+	"github.com/shirou/gopsutil/cpu"
 )
 
 // TODO : if connect cmd is used reset timer or simply don't allow benchark
 // without bootstrap node
 var startup_ts time.Time = time.Now()
+
+// a sample contains all hardware measurements ar one opint in time
+type Sample struct {
+	Ts         time.Time `json:"ts"`
+	MemBytes   uint64    `json:"membytes"`
+	CPUPercent float64   `json:"cpupercent"`
+}
 
 // gathers all the benchmarks we want
 type Benchmark struct {
@@ -21,6 +32,39 @@ type Benchmark struct {
 
 	// the region this node is working from
 	Region string `json:"region"`
+
+	// hardware samples
+	Samples []Sample `json:"samples"`
+}
+
+func MonitorMemoryAndCPU(ctx context.Context, bench *Benchmark) {
+	interval := 10
+	ticker := time.NewTicker(time.Duration(interval) * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			// get mem usage
+			memStats := &runtime.MemStats{}
+			runtime.ReadMemStats(memStats)
+			bytes := memStats.Sys
+
+			// get CPU usage
+			cpuPercent, err := cpu.Percent(time.Second, false)
+			if err != nil {
+				fmt.Println("Error getting CPU usage:", err)
+			}
+			cpu := cpuPercent[0]
+
+			// addd sample to benchmark
+			s := Sample{time.Now(), bytes, cpu}
+			bench.Samples = append(bench.Samples, s)
+
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 // custom json marshal
@@ -58,17 +102,19 @@ func (b *Benchmark) MarshalJSON() ([]byte, error) {
 	}
 
 	data := struct {
-		BootrapSec float64 `json:"bootstrap"`
-		AverageC   float64 `json:"averagec"`
-		MinC       float64 `json:"minc"`
-		MaxC       float64 `json:"maxc"`
-		Region     string  `json:"region"`
+		BootrapSec float64  `json:"bootstrap"`
+		AverageC   float64  `json:"averagec"`
+		MinC       float64  `json:"minc"`
+		MaxC       float64  `json:"maxc"`
+		Region     string   `json:"region"`
+		Samples    []Sample `json:"samples"`
 	}{
 		BootrapSec: bootstrapSec,
 		AverageC:   average,
 		MinC:       smallest,
 		MaxC:       largest,
 		Region:     b.Region,
+		Samples:    b.Samples,
 	}
 
 	return json.Marshal(data)

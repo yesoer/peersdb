@@ -28,7 +28,7 @@ var orbit iface.OrbitDB
 // DEVNOTE : PeersDB.EventLogDB may be nil after init ! that is if it's not root
 // and has no transaction datastore locally. A datastore will be replicated on
 // the first established peer connection
-func InitPeer(peersDB *PeersDB) error {
+func InitPeer(peersDB *PeersDB, bench *Benchmark) error {
 
 	// start ipfs node
 	ctx := context.Background()
@@ -156,7 +156,12 @@ func InitPeer(peersDB *PeersDB) error {
 	}
 
 	peersDB.Config = conf
-	peersDB.Benchmark = &Benchmark{}
+	if bench != nil {
+		peersDB.Benchmark = bench
+	} else {
+		peersDB.Benchmark = &Benchmark{}
+	}
+
 	if *config.FlagRegion != "" {
 		peersDB.Benchmark.Region = *config.FlagRegion
 	}
