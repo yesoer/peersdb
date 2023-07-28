@@ -39,3 +39,4 @@ bm=$(gather_benchmarks)
 echo $bm
 
 store_bm_csv $bm
+echo $bm > benchmark.json

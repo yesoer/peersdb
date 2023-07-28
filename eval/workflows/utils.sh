@@ -80,6 +80,6 @@ store_bm_csv() {
     header="Bootstrap time, Maximum time for replication, Minimum time for replication, Average replication time,Node Region"
 
     # create a new file and store the CSV data
-    echo "$header" > benchmark_raw.csv
-    echo "$csv_data" >> benchmark_raw.csv
+    echo "$header" > benchmark.csv
+    echo "$csv_data" >> benchmark.csv
 }
