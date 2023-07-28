@@ -39,6 +39,7 @@ You may use the following flags to configure your peersdb instance.
 | -full-replica | enable full data replication through ipfs pinning | false |
 | -bootstrap    | set a bootstrap peer to connect to on startup | "" |
 | -benchmark    | enables benchmarking on this node | false |
+| -region       | if the nodes region is set, it is added to the benchmark data | "" |
 
 There is also a persitent config file but you probably don't want to change 
 anything in there.
@@ -238,16 +239,16 @@ To make it short : we use Helm charts to deploy docker containers on kubernetes,
 This allows us to easily evaluate how well peersdb handles certain tasks like replication. 
 Our runs were largely executed on GCP but if you want to dabble around with them locally we'd advice to use kind.
 
-> Note : the dockerfile aswell as the helm chart are NOT fit for production usage.
+> Note : the dockerfile as well as the helm chart are specifically built for evaluation, for anything else feel free to use them as a starting point though.
 
 If you want to build your own docker image you can do it like this :
 ```
-docker buildx build --platform linux/amd64,linux/arm64 --push -t yesoer/peersdb:latest -f eval/dockerfile .
+docker buildx build --platform linux/amd64,linux/arm64 --push -t <your docker repo>:latest -f eval/dockerfile .
 ```
 this way the image will be built for amd64 and arm64 architectures and directly pushed to the configured image repository.
 If you don't care about multi-architecture builds you may simply use : 
 ```
-docker build -t yesoer/peersdb:latest -f eval/dockerfile .
+docker build -t <your docker repo> -f eval/dockerfile .
 ```
 
 To deploy the helm chart(s) :
@@ -272,3 +273,7 @@ use the following approach :
 kubectl label nodes <you node> region=<your node's region>
 helm install -f ./eval/peer-values.yaml peersdb-peers ./eval/helm --set nodeSelector.region=<your nodes region>
 ```
+
+There also is a shell script under `eval/workflows/eval.sh` to help setting up peers in a k8s cluster with multiple regions.
+It's very tailored to the experiments we ran but has been added for documentation.
+The raw evaluation results can be found under `eval/results/`.
