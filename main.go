@@ -34,10 +34,16 @@ func main() {
 		termCancel()
 	}()
 
+	// run profiling
+	var bench app.Benchmark
+	if *config.FlagBenchmark {
+		go app.MonitorMemoryAndCPU(termCtx, &bench)
+	}
+
 	// init application
 	// TODO : this needs centralized error handling aswell but first check out logging via orbitdb
 	var peersDB app.PeersDB
-	err := app.InitPeer(&peersDB)
+	err := app.InitPeer(&peersDB, &bench)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error on setup:\n %+v\n", err)
 		os.Exit(1)

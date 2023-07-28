@@ -725,9 +725,9 @@ func awaitReplicateEvent(peersDB *PeersDB, logChan chan Log) {
 		if re.Address.GetPath() != contributions.Address().GetPath() {
 			continue
 		}
-
 		entries := re.Entries
 
+		logChan <- Log{Info, fmt.Sprintf("Replicated event with %d entries", len(entries))}
 		for _, entry := range entries {
 			// get the ipfs-log operation from the entry
 			opStr := entry.GetPayload()
