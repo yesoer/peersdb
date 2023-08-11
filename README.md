@@ -1,6 +1,12 @@
-# PeersDB
+# PeersDB [![Continued at PeersDB/peersdb](https://img.shields.io/badge/Continued%20at-PeersDB/peersdb-blue)](https://github.com/PeersDB/peersdb)
 
-A distributed p2p database, based on orbitdb but extend with blockchain technology to provide data integrity. Intended for the sharing of datasets for model training
+A distributed p2p database, based on orbitdb, intended for the sharing of datasets for model training
+
+This project is archived because it is related to a thesis. Hence the ongoing development and improvements have been moved to a new repository.
+
+**The active development of this project has been continued at [PeersDB/peersdb](https://github.com/PeersDB/peersdb).**
+
+Please visit the new repository for the latest updates, contributions, and discussions. Thank you for your support and interest in this project!
 
 ## Table of Contents
 - [Get Started](#get-started)
